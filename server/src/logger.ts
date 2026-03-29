@@ -8,7 +8,18 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
-const { combine, timestamp, json, colorize, simple } = winston.format;
+const { combine, timestamp, json, colorize, printf, errors } = winston.format;
+
+const consoleFormat = combine(
+  colorize(),
+  timestamp(),
+  errors({ stack: true }),
+  printf(({ level, message, timestamp: ts, ...meta }) => {
+    const metaKeys = Object.keys(meta).filter((key) => meta[key] !== undefined);
+    const metaText = metaKeys.length > 0 ? ` ${JSON.stringify(meta)}` : '';
+    return `${ts} ${level}: ${typeof message === 'string' ? message : JSON.stringify(message)}${metaText}`;
+  })
+);
 
 const transports: winston.transport[] = [
   new winston.transports.File({
@@ -25,7 +36,7 @@ const transports: winston.transport[] = [
 if (process.env.NODE_ENV !== 'production') {
   transports.push(
     new winston.transports.Console({
-      format: combine(colorize(), simple()),
+      format: consoleFormat,
     })
   );
 }

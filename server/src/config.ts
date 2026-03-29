@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { z } from 'zod';
 import type { AgentConfig } from './types/config';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
