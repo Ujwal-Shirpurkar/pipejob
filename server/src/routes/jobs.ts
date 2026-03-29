@@ -7,6 +7,7 @@ import {
   updateApplicationStatus,
   getApplication,
   listApplications,
+  saveAnalysis,
   getDb,
 } from '../db/schema';
 import { scrapeJobs } from '../services/scraper/index';
@@ -100,6 +101,7 @@ router.post('/:id/analyse', async (req: Request<IdParams>, res: Response) => {
   try {
     const masterCV = loadMasterCV();
     const analysis = await analyseJD(masterCV, app.job.rawJD, app.id);
+    saveAnalysis(app.id, analysis);
     updateApplicationStatus(app.id, 'analysed');
     emitJobEvent(app.id, 'analysed', `Match score: ${analysis.matchScore}`);
 
@@ -146,7 +148,7 @@ router.post('/:id/apply', applicationRateLimiter, async (req: Request<IdParams>,
   if (!app) { res.status(404).json({ error: 'Not found' }); return; }
   if (!app.output) { res.status(400).json({ error: 'Documents must be generated first' }); return; }
 
-  if (!checkDailyLimit()) {
+  if (!await checkDailyLimit()) {
     res.status(429).json({ error: 'Daily application limit reached' });
     return;
   }

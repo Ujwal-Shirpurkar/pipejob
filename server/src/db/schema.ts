@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import type { DiscoveredJob, JobApplication, JobStatus } from '../types/index';
+import type { DiscoveredJob, JobApplication, JobStatus, JDAnalysis } from '../types/index';
 import logger from '../logger';
 
 let db: Database.Database;
@@ -25,6 +25,7 @@ export function initDb(dbPath: string): Database.Database {
       raw_jd TEXT,
       status TEXT DEFAULT 'discovered',
       match_score INTEGER,
+      analysis_json TEXT,
       cv_path TEXT,
       cover_letter_path TEXT,
       applied_at TEXT,
@@ -38,6 +39,13 @@ export function initDb(dbPath: string): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_status ON applications(status);
     CREATE INDEX IF NOT EXISTS idx_company ON applications(company);
   `);
+
+  // Migration: add analysis_json column to existing DBs that pre-date this column
+  try {
+    db.exec(`ALTER TABLE applications ADD COLUMN analysis_json TEXT`);
+  } catch {
+    // Column already exists — nothing to do
+  }
 
   logger.info({ action: 'db_init', dbPath, message: 'Database initialised' });
   return db;
@@ -104,6 +112,13 @@ export function getApplication(id: string): JobApplication | undefined {
   return rowToApplication(row);
 }
 
+export function saveAnalysis(id: string, analysis: JDAnalysis): void {
+  const database = getDb();
+  database.prepare(`
+    UPDATE applications SET analysis_json = ?, updated_at = ? WHERE id = ?
+  `).run(JSON.stringify(analysis), new Date().toISOString(), id);
+}
+
 export function isDuplicate(url: string): boolean {
   const database = getDb();
   const row = database.prepare('SELECT id FROM applications WHERE job_url = ?').get(url);
@@ -156,18 +171,8 @@ function rowToApplication(row: Record<string, unknown>): JobApplication {
     error: row.error as string | undefined,
   };
 
-  if (row.match_score !== null && row.match_score !== undefined) {
-    application.analysis = {
-      jobId: row.id as string,
-      matchScore: row.match_score as number,
-      requiredKeywords: [],
-      missingKeywords: [],
-      suggestedSummary: '',
-      tailoredBullets: {},
-      coverLetterDraft: '',
-      language: 'en',
-      analysedAt: (row.updated_at as string) || '',
-    };
+  if (row.analysis_json) {
+    application.analysis = JSON.parse(row.analysis_json as string) as JDAnalysis;
   }
 
   if (row.cv_path) {
