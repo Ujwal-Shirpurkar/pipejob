@@ -36,8 +36,31 @@ export function initDb(dbPath: string): Database.Database {
       updated_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS companies (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      name_normalized TEXT NOT NULL,
+      website TEXT,
+      linkedin_url TEXT,
+      sector TEXT,
+      city TEXT,
+      state TEXT,
+      country TEXT DEFAULT 'DE',
+      size_range TEXT,
+      is_actively_hiring INTEGER DEFAULT 0,
+      hiring_sources TEXT,
+      notes TEXT,
+      source TEXT DEFAULT 'seed',
+      source_confidence TEXT DEFAULT 'medium',
+      created_at TEXT,
+      updated_at TEXT
+    );
+
     CREATE INDEX IF NOT EXISTS idx_status ON applications(status);
     CREATE INDEX IF NOT EXISTS idx_company ON applications(company);
+    CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(name_normalized);
+    CREATE INDEX IF NOT EXISTS idx_companies_hiring ON companies(is_actively_hiring);
+    CREATE INDEX IF NOT EXISTS idx_companies_sector ON companies(sector);
   `);
 
   // Migration: add analysis_json column to existing DBs that pre-date this column
@@ -110,6 +133,92 @@ export function getApplication(id: string): JobApplication | undefined {
   const row = database.prepare('SELECT * FROM applications WHERE id = ?').get(id) as Record<string, unknown> | undefined;
   if (!row) return undefined;
   return rowToApplication(row);
+}
+
+// ─── Company Reference CRUD ────────────────────────────────────────────────
+
+export interface CompanyRecord {
+  id: string;
+  name: string;
+  name_normalized: string;
+  website?: string;
+  linkedin_url?: string;
+  sector?: string;
+  city?: string;
+  state?: string;
+  country: string;
+  size_range?: string;
+  is_actively_hiring: boolean;
+  hiring_sources?: string[];
+  notes?: string;
+  source: string;
+  source_confidence: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function upsertCompany(c: Omit<CompanyRecord, 'created_at' | 'updated_at'>): void {
+  const database = getDb();
+  const now = new Date().toISOString();
+  database.prepare(`
+    INSERT INTO companies (id, name, name_normalized, website, linkedin_url, sector, city, state, country,
+      size_range, is_actively_hiring, hiring_sources, notes, source, source_confidence, created_at, updated_at)
+    VALUES (@id, @name, @name_normalized, @website, @linkedin_url, @sector, @city, @state, @country,
+      @size_range, @is_actively_hiring, @hiring_sources, @notes, @source, @source_confidence, @created_at, @updated_at)
+    ON CONFLICT(id) DO UPDATE SET
+      is_actively_hiring = excluded.is_actively_hiring,
+      hiring_sources = excluded.hiring_sources,
+      website = excluded.website,
+      updated_at = excluded.updated_at
+  `).run({
+    id: c.id,
+    name: c.name,
+    name_normalized: c.name_normalized,
+    website: c.website ?? null,
+    linkedin_url: c.linkedin_url ?? null,
+    sector: c.sector ?? null,
+    city: c.city ?? null,
+    state: c.state ?? null,
+    country: c.country,
+    size_range: c.size_range ?? null,
+    is_actively_hiring: c.is_actively_hiring ? 1 : 0,
+    hiring_sources: c.hiring_sources ? JSON.stringify(c.hiring_sources) : null,
+    notes: c.notes ?? null,
+    source: c.source,
+    source_confidence: c.source_confidence,
+    created_at: now,
+    updated_at: now,
+  });
+}
+
+export function listCompanies(filters?: { sector?: string; hiring?: boolean; limit?: number }): CompanyRecord[] {
+  const database = getDb();
+  const conditions: string[] = [];
+  const params: (string | number)[] = [];
+
+  if (filters?.sector) { conditions.push('sector = ?'); params.push(filters.sector); }
+  if (filters?.hiring !== undefined) { conditions.push('is_actively_hiring = ?'); params.push(filters.hiring ? 1 : 0); }
+
+  let query = 'SELECT * FROM companies';
+  if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
+  query += ' ORDER BY name_normalized';
+  if (filters?.limit) { query += ' LIMIT ?'; params.push(filters.limit); }
+
+  const rows = database.prepare(query).all(...params) as Record<string, unknown>[];
+  return rows.map((r) => ({
+    ...(r as unknown as CompanyRecord),
+    is_actively_hiring: Boolean(r.is_actively_hiring),
+    hiring_sources: r.hiring_sources ? JSON.parse(r.hiring_sources as string) as string[] : [],
+  }));
+}
+
+export function seedCompaniesIfEmpty(companies: Omit<CompanyRecord, 'created_at' | 'updated_at'>[]): number {
+  const database = getDb();
+  const count = (database.prepare('SELECT COUNT(*) as n FROM companies').get() as { n: number }).n;
+  if (count > 0) return 0;
+  for (const c of companies) upsertCompany(c);
+  logger.info({ action: 'seed_companies', inserted: companies.length });
+  return companies.length;
 }
 
 export function saveAnalysis(id: string, analysis: JDAnalysis): void {

@@ -13,7 +13,7 @@ export function getJob(id: string): Promise<JobApplication> {
   return api.get(`/api/jobs/${id}`).then((r) => r.data);
 }
 
-export function discoverJobs(body: { keywords: string[]; location: string; sources: string[] }) {
+export function discoverJobs(body: { keywords: string[]; sources: string[]; location?: string }) {
   return api.post('/api/jobs/discover', body).then((r) => r.data);
 }
 

@@ -70,14 +70,18 @@ router.get('/:id', (req: Request<IdParams>, res: Response) => {
 
 // POST /api/jobs/discover
 router.post('/discover', async (req: Request, res: Response) => {
-  const { keywords, sources } = req.body as { keywords: string[]; sources: string[] };
-  if (!Array.isArray(keywords) || !Array.isArray(sources)) {
-    res.status(400).json({ error: 'keywords and sources must be arrays' });
+  const { keywords, sources, location } = req.body as { keywords: string[]; sources: string[]; location?: string };
+  if (!Array.isArray(keywords) || keywords.length === 0) {
+    res.status(400).json({ error: 'keywords must be a non-empty array' });
+    return;
+  }
+  if (!Array.isArray(sources) || sources.length === 0) {
+    res.status(400).json({ error: 'sources must be a non-empty array' });
     return;
   }
 
   try {
-    const jobs = await scrapeJobs(sources, keywords);
+    const jobs = await scrapeJobs(sources, keywords, location);
     const ids: string[] = [];
     for (const job of jobs) {
       insertApplication(job);

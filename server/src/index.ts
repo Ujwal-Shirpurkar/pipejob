@@ -2,11 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import type { Request, Response, NextFunction } from 'express';
 import { initDb } from './db/schema';
+import { seedCompaniesIfEmpty } from './db/schema';
+import { GERMAN_TECH_COMPANIES } from './db/companySeed';
 import { config, PORT } from './config';
 import logger from './logger';
 import { connectRedis } from './redis';
 import jobsRouter from './routes/jobs';
 import cvRouter from './routes/cv';
+import companiesRouter from './routes/companies';
+import webhooksRouter from './routes/webhooks';
 
 const app = express();
 
@@ -16,9 +20,14 @@ app.use(express.json());
 // Initialise database
 initDb(config.dbPath);
 
+// Seed company reference data on first run
+seedCompaniesIfEmpty(GERMAN_TECH_COMPANIES);
+
 // Routes
 app.use('/api/jobs', jobsRouter);
 app.use('/api/cv', cvRouter);
+app.use('/api/companies', companiesRouter);
+app.use('/api/webhooks', webhooksRouter);
 
 // Health check
 app.get('/health', (_req: Request, res: Response) => {

@@ -45,10 +45,9 @@ export async function randomMouseMove(page: Page): Promise<void> {
   }
 }
 
-export async function scrapeJobs(sources: string[], keywords: string[]): Promise<DiscoveredJob[]> {
+export async function scrapeJobs(sources: string[], keywords: string[], location = 'Deutschland'): Promise<DiscoveredJob[]> {
   const browser = await getBrowser();
   const allJobs: DiscoveredJob[] = [];
-  const location = 'Deutschland';
 
   for (const source of sources) {
     const context = await browser.newContext({

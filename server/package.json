@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:debug": "tsx watch --inspect src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:reset": "rm -f data/applications.sqlite && npm run dev"

@@ -2,12 +2,43 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { z } from 'zod';
 import { config } from '../config';
 import logger from '../logger';
 
 type DownloadParams = { jobId: string; type: string };
 
 const router = Router();
+
+const MasterCVSchema = z.object({
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(1),
+  linkedin: z.string().url().or(z.literal('')),
+  github: z.string().url().or(z.literal('')).optional(),
+  location: z.string().min(1),
+  summary: z.string(),
+  skills: z.array(z.string()),
+  experience: z.array(z.object({
+    company: z.string(),
+    role: z.string(),
+    startDate: z.string(),
+    endDate: z.string().optional(),
+    bullets: z.array(z.string()),
+  })),
+  education: z.array(z.object({
+    institution: z.string(),
+    degree: z.string(),
+    field: z.string(),
+    startDate: z.string(),
+    endDate: z.string().optional(),
+    gpa: z.string().optional(),
+  })),
+  languages: z.array(z.object({
+    language: z.string(),
+    level: z.string(),
+  })),
+});
 
 // GET /api/cv
 router.get('/', (_req: Request, res: Response) => {
@@ -23,9 +54,14 @@ router.get('/', (_req: Request, res: Response) => {
 
 // POST /api/cv
 router.post('/', (req: Request<Record<string, never>>, res: Response) => {
+  const parsed = MasterCVSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Invalid CV data', details: parsed.error.flatten().fieldErrors });
+    return;
+  }
   try {
     const cvPath = path.resolve(config.masterCVPath);
-    fs.writeFileSync(cvPath, JSON.stringify(req.body, null, 2), 'utf-8');
+    fs.writeFileSync(cvPath, JSON.stringify(parsed.data, null, 2), 'utf-8');
     logger.info({ action: 'update_cv', result: 'ok' });
     res.json({ saved: true });
   } catch (err) {
@@ -42,18 +78,26 @@ router.get('/download/:jobId/:type', (req: Request<DownloadParams>, res: Respons
     return;
   }
 
-  const filename = type === 'cv' ? 'cv.docx' : 'cover-letter.docx';
-  const filePath = path.join(path.resolve(config.outputDir), jobId, filename);
+  const baseName = type === 'cv' ? 'cv' : 'cover-letter';
+  const jobDir = path.join(path.resolve(config.outputDir), jobId);
 
-  if (!fs.existsSync(filePath)) {
-    res.status(404).json({ error: 'File not found' });
-    return;
+  // Try PDF first (new pipeline), fall back to DOCX (legacy)
+  const pdfPath = path.join(jobDir, `${baseName}.pdf`);
+  const docxPath = path.join(jobDir, `${baseName}.docx`);
+
+  if (fs.existsSync(pdfPath)) {
+    logger.info({ action: 'download_file', jobId, type, format: 'pdf' });
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    fs.createReadStream(pdfPath).pipe(res);
+  } else if (fs.existsSync(docxPath)) {
+    logger.info({ action: 'download_file', jobId, type, format: 'docx' });
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.docx"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    fs.createReadStream(docxPath).pipe(res);
+  } else {
+    res.status(404).json({ error: 'File not found. Generate documents first.' });
   }
-
-  logger.info({ action: 'download_file', jobId, type, filePath });
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-  fs.createReadStream(filePath).pipe(res);
 });
 
 export default router;

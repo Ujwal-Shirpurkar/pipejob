@@ -3,82 +3,53 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PipeJob — Agent Workflow & Test Plan</title>
+<title>PipeJob — Phase 2 Architecture & Workflow</title>
 <style>
   :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --surface2: #22263a;
-    --border: #2e3250;
-    --accent: #6c63ff;
-    --accent2: #4ecdc4;
-    --accent3: #f7b731;
-    --accent4: #fc5c65;
-    --accent5: #45aaf2;
-    --green: #26de81;
-    --text: #e8eaf6;
-    --muted: #8892b0;
-    --card-radius: 12px;
-    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3250;
+    --accent: #6c63ff; --accent2: #4ecdc4; --accent3: #f7b731; --accent4: #fc5c65;
+    --accent5: #45aaf2; --green: #26de81; --text: #e8eaf6; --muted: #8892b0;
+    --card-radius: 12px; --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--font); line-height: 1.6; }
-
-  /* NAV */
-  nav {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(15,17,23,0.95); backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    display: flex; align-items: center; gap: 0; overflow-x: auto;
-  }
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(15,17,23,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 0; overflow-x: auto; }
   nav .logo { font-weight: 800; font-size: 1.1rem; color: var(--accent); margin-right: 24px; padding: 14px 0; white-space: nowrap; }
+  nav .phase-badge { background: var(--accent3); color: #000; font-size: 0.7rem; font-weight: 800; padding: 2px 7px; border-radius: 4px; margin-right: 16px; white-space: nowrap; }
   nav a { color: var(--muted); text-decoration: none; padding: 14px 12px; font-size: 0.85rem; white-space: nowrap; transition: color 0.2s; }
   nav a:hover { color: var(--text); }
-
-  /* LAYOUT */
   .container { max-width: 1280px; margin: 0 auto; padding: 48px 24px; }
   .section { margin-bottom: 72px; }
   .section-header { margin-bottom: 32px; }
   .section-header h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
   .section-header p { color: var(--muted); font-size: 0.95rem; }
   .tag { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .tag-section { background: var(--accent); color: #fff; margin-bottom: 10px; }
-
-  /* CARDS */
+  .tag-phase { background: var(--accent); color: #fff; margin-bottom: 10px; }
+  .tag-new { background: var(--green); color: #000; }
+  .tag-fixed { background: var(--accent5); color: #000; }
+  .tag-partial { background: var(--accent3); color: #000; }
+  .tag-future { background: var(--muted); color: var(--bg); }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); padding: 24px; }
   .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-  @media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
-  @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
-
-  /* HERO */
+  @media (max-width: 900px) { .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; } }
   .hero { text-align: center; padding: 64px 0 48px; }
   .hero h1 { font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 12px; }
   .hero p { color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 24px; }
-  .hero-meta { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+  .hero-meta { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
   .hero-meta span { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; color: var(--muted); }
   .hero-meta span strong { color: var(--text); }
 
-  /* WORKFLOW PIPELINE */
+  /* PIPELINE */
   .pipeline { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding: 24px 0; }
-  .pipeline-step {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 20px 16px; min-width: 160px; flex-shrink: 0; position: relative;
-  }
-  .pipeline-step .step-num {
-    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 0.75rem; font-weight: 700; margin-bottom: 10px;
-  }
+  .pipeline-step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 16px; min-width: 150px; flex-shrink: 0; }
+  .pipeline-step .step-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; margin-bottom: 10px; }
   .pipeline-step .step-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; }
   .pipeline-step .step-desc { font-size: 0.75rem; color: var(--muted); }
-  .pipeline-step .step-badge { font-size: 0.65rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-top: 8px; display: inline-block; }
-  .pipeline-arrow {
-    display: flex; align-items: center; padding: 0 10px; color: var(--muted);
-    font-size: 1.4rem; flex-shrink: 0; align-self: center;
-  }
+  .pipeline-step .step-new { font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 3px; margin-top: 8px; display: inline-block; background: var(--green); color: #000; }
+  .pipeline-arrow { display: flex; align-items: center; padding: 0 10px; color: var(--muted); font-size: 1.4rem; flex-shrink: 0; align-self: center; }
   .s1 { border-color: #6c63ff33; } .s1 .step-num { background: #6c63ff22; color: var(--accent); }
   .s2 { border-color: #f7b73133; } .s2 .step-num { background: #f7b73122; color: var(--accent3); }
   .s3 { border-color: #45aaf233; } .s3 .step-num { background: #45aaf222; color: var(--accent5); }
@@ -86,12 +57,9 @@
   .s5 { border-color: #26de8133; } .s5 .step-num { background: #26de8122; color: var(--green); }
   .s6 { border-color: #fc5c6533; } .s6 .step-num { background: #fc5c6522; color: var(--accent4); }
 
-  /* STATUS BADGES */
+  /* STATUS */
   .status-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .status-pill {
-    padding: 5px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
-    border: 1px solid; cursor: default;
-  }
+  .status-pill { padding: 5px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid; }
   .st-discovered { background: #6c63ff22; border-color: #6c63ff66; color: var(--accent); }
   .st-analysed   { background: #f7b73122; border-color: #f7b73166; color: var(--accent3); }
   .st-docs       { background: #45aaf222; border-color: #45aaf266; color: var(--accent5); }
@@ -99,29 +67,7 @@
   .st-applied    { background: #26de8122; border-color: #26de8166; color: var(--green); }
   .st-error      { background: #fc5c6522; border-color: #fc5c6566; color: var(--accent4); }
   .st-skipped    { background: #8892b022; border-color: #8892b066; color: var(--muted); }
-  .st-interview  { background: #fd9644 22; border-color: #fd964466; color: #fd9644; }
   .status-arrow  { color: var(--muted); font-size: 1rem; }
-
-  /* ARCHITECTURE DIAGRAM */
-  .arch-grid {
-    display: grid;
-    grid-template-columns: 1fr 60px 1.4fr 60px 1fr;
-    align-items: start; gap: 0;
-  }
-  .arch-col { display: flex; flex-direction: column; gap: 12px; }
-  .arch-layer { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; }
-  .arch-box {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 12px 14px; font-size: 0.82rem;
-  }
-  .arch-box strong { display: block; font-size: 0.85rem; margin-bottom: 4px; }
-  .arch-box span { font-size: 0.75rem; color: var(--muted); }
-  .arch-arrow-col { display: flex; align-items: center; justify-content: center; padding-top: 80px; }
-  .arch-arrow-col .arr { font-size: 1.8rem; color: var(--muted); }
-  @media (max-width: 900px) {
-    .arch-grid { grid-template-columns: 1fr; }
-    .arch-arrow-col { display: none; }
-  }
 
   /* API TABLE */
   .api-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
@@ -133,44 +79,23 @@
   .m-get    { background: #26de8122; color: var(--green); }
   .m-post   { background: #45aaf222; color: var(--accent5); }
   .m-patch  { background: #fd964422; color: #fd9644; }
-  .m-delete { background: #fc5c6522; color: var(--accent4); }
   .endpoint { font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--accent2); }
-  .dep-tag { font-size: 0.7rem; padding: 1px 6px; border-radius: 3px; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
-  .warn-tag { font-size: 0.7rem; padding: 1px 6px; border-radius: 3px; background: #fc5c6522; color: var(--accent4); border: 1px solid #fc5c6544; }
+  .new-badge { font-size: 0.65rem; padding: 1px 5px; border-radius: 3px; background: var(--green); color: #000; font-weight: 700; margin-left: 4px; }
+  .fixed-badge { font-size: 0.65rem; padding: 1px 5px; border-radius: 3px; background: var(--accent5); color: #000; font-weight: 700; margin-left: 4px; }
 
-  /* TEST PLAN */
-  .test-area { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-radius); overflow: hidden; margin-bottom: 16px; }
-  .test-area-header {
-    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
-    cursor: pointer; user-select: none;
-    border-bottom: 1px solid var(--border);
-  }
-  .test-area-header:hover { background: var(--surface2); }
-  .test-area-title { font-weight: 700; font-size: 0.95rem; }
-  .test-area-meta { display: flex; gap: 8px; align-items: center; }
-  .test-area-body { padding: 20px; }
-  .test-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
-  .test-item:last-child { margin-bottom: 0; }
-  .test-item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
-  .test-item-title { font-weight: 600; font-size: 0.88rem; }
-  .test-item-tags { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
-  .test-item-desc { font-size: 0.8rem; color: var(--muted); }
-  .test-item-detail { margin-top: 10px; font-size: 0.78rem; color: var(--muted); }
-  .test-item-detail strong { color: var(--text); }
-  .priority-high   { background: #fc5c6522; color: var(--accent4); border: 1px solid #fc5c6544; }
-  .priority-medium { background: #f7b73122; color: var(--accent3); border: 1px solid #f7b73144; }
-  .priority-low    { background: #8892b022; color: var(--muted); border: 1px solid #8892b044; }
-  .type-unit  { background: #6c63ff22; color: var(--accent); border: 1px solid #6c63ff44; }
-  .type-int   { background: #4ecdc422; color: var(--accent2); border: 1px solid #4ecdc444; }
-  .type-api   { background: #45aaf222; color: var(--accent5); border: 1px solid #45aaf244; }
-  .type-e2e   { background: #26de8122; color: var(--green); border: 1px solid #26de8144; }
-  .type-ui    { background: #fd964422; color: #fd9644; border: 1px solid #fd964444; }
-  .type-manual{ background: #8892b022; color: var(--muted); border: 1px solid #8892b044; }
-  .chevron { transition: transform 0.2s; font-size: 1rem; }
-  .collapsed .chevron { transform: rotate(-90deg); }
-  .collapsed .test-area-body { display: none; }
+  /* N8N FLOW */
+  .n8n-flow { display: flex; flex-direction: column; gap: 0; }
+  .n8n-step { display: flex; align-items: flex-start; gap: 16px; padding: 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 4px; position: relative; }
+  .n8n-node { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .n8n-content { flex: 1; }
+  .n8n-content h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 3px; }
+  .n8n-content p { font-size: 0.8rem; color: var(--muted); }
+  .n8n-content code { font-family: monospace; font-size: 0.78rem; background: var(--surface); padding: 1px 5px; border-radius: 3px; color: var(--accent2); }
+  .n8n-human { border-left: 3px solid var(--accent3); }
+  .n8n-auto { border-left: 3px solid var(--accent5); }
+  .n8n-arrow { text-align: center; color: var(--muted); font-size: 1.2rem; padding: 2px; }
 
-  /* RISK MATRIX */
+  /* RISK */
   .risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   @media (max-width: 700px) { .risk-grid { grid-template-columns: 1fr; } }
   .risk-card { background: var(--surface2); border-radius: 8px; padding: 18px; border-left: 4px solid; }
@@ -186,279 +111,147 @@
   .risk-medium   .risk-label { color: var(--accent5); }
   .risk-low      .risk-label { color: var(--muted); }
 
-  /* SMOKE TEST */
-  .smoke-list { list-style: none; }
-  .smoke-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
-  .smoke-list li:last-child { border-bottom: none; }
-  .smoke-num { width: 22px; height: 22px; background: var(--surface2); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; color: var(--accent); }
-  .smoke-detail { color: var(--muted); font-size: 0.75rem; }
-
-  /* BUG CALLOUT */
-  .bug-box { background: #fc5c6511; border: 1px solid #fc5c6544; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
-  .bug-box h4 { color: var(--accent4); font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
-  .bug-box p { font-size: 0.8rem; color: var(--muted); }
-  .bug-box code { font-family: monospace; background: var(--surface); padding: 1px 5px; border-radius: 3px; color: var(--accent2); font-size: 0.78rem; }
-
-  /* TOOL SUGGESTIONS */
-  .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  .tool-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
-  .tool-card h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; color: var(--accent2); }
-  .tool-card p  { font-size: 0.75rem; color: var(--muted); }
-
-  /* NEXT STEPS */
-  .steps-list { counter-reset: step; list-style: none; }
-  .steps-list li { counter-increment: step; display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
-  .steps-list li:last-child { border-bottom: none; }
-  .steps-list li::before {
-    content: counter(step); width: 30px; height: 30px; background: var(--accent);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 0.8rem; font-weight: 800; color: #fff; flex-shrink: 0;
-    margin-top: 2px;
-  }
-  .steps-list li div { font-size: 0.88rem; }
-  .steps-list li div strong { display: block; margin-bottom: 3px; }
-  .steps-list li div span { color: var(--muted); font-size: 0.82rem; }
+  /* IMPL STATUS TABLE */
+  .impl-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  .impl-table th { background: var(--surface2); padding: 10px 14px; text-align: left; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .impl-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .impl-table tr:last-child td { border-bottom: none; }
 
   /* MISC */
   ul.plain { list-style: none; }
   ul.plain li { padding: 3px 0; font-size: 0.83rem; color: var(--muted); }
   ul.plain li::before { content: "·"; margin-right: 6px; color: var(--accent); }
   code { font-family: 'Courier New', monospace; background: var(--surface2); padding: 1px 5px; border-radius: 3px; font-size: 0.82em; color: var(--accent2); }
-  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
-  .partial-badge { background: #f7b73122; color: var(--accent3); border: 1px solid #f7b73144; font-size: 0.7rem; padding: 1px 7px; border-radius: 4px; font-weight: 600; }
-  .missing-badge { background: #fc5c6522; color: var(--accent4); border: 1px solid #fc5c6544; font-size: 0.7rem; padding: 1px 7px; border-radius: 4px; font-weight: 600; }
-  .ok-badge { background: #26de8122; color: var(--green); border: 1px solid #26de8144; font-size: 0.7rem; padding: 1px 7px; border-radius: 4px; font-weight: 600; }
-
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .bug-box { background: #26de8122; border: 1px solid #26de8144; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .bug-box h4 { color: var(--green); font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+  .bug-box p { font-size: 0.8rem; color: var(--muted); }
+  .warn-box { background: #f7b73122; border: 1px solid #f7b73144; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .warn-box h4 { color: var(--accent3); font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+  .warn-box p { font-size: 0.8rem; color: var(--muted); }
   footer { border-top: 1px solid var(--border); padding: 24px; text-align: center; color: var(--muted); font-size: 0.8rem; }
+  .arch-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 0.82rem; margin-bottom: 10px; }
+  .arch-box strong { display: block; font-size: 0.85rem; margin-bottom: 4px; }
+  .arch-box span { font-size: 0.75rem; color: var(--muted); }
 </style>
 </head>
 <body>
 
 <nav>
   <span class="logo">PipeJob</span>
-  <a href="#what-the-agent-does">Agent</a>
+  <span class="phase-badge">Phase 2</span>
+  <a href="#agent">Agent</a>
+  <a href="#workflow">Workflow</a>
   <a href="#architecture">Architecture</a>
-  <a href="#user-workflow">Workflow</a>
-  <a href="#api-map">API Map</a>
-  <a href="#known-issues">Known Issues</a>
-  <a href="#test-plan">Test Plan</a>
-  <a href="#risk-areas">Risk Areas</a>
-  <a href="#next-steps">Next Steps</a>
+  <a href="#pdf-gen">PDF Generation</a>
+  <a href="#companies">Companies DB</a>
+  <a href="#n8n">n8n</a>
+  <a href="#api">API Map</a>
+  <a href="#bugs">Bugs Fixed</a>
+  <a href="#status">Status</a>
 </nav>
 
-<!-- HERO -->
 <div class="container">
+
+  <!-- HERO -->
   <div class="hero">
-    <h1>PipeJob Agent</h1>
-    <p>Automated job application agent — workflow visualization, system inventory, and testing plan.</p>
+    <h1>PipeJob — Phase 2</h1>
+    <p>Automated job application agent — fully updated architecture, discover UI, PDF generation, company reference system, and n8n integration.</p>
     <div class="hero-meta">
       <span>Frontend: <strong>React 19 + Vite</strong></span>
       <span>Backend: <strong>Express + TypeScript</strong></span>
-      <span>DB: <strong>SQLite (WAL)</strong></span>
       <span>AI: <strong>Claude Sonnet 4</strong></span>
-      <span>Browser: <strong>Playwright + Stealth</strong></span>
-      <span>Queue: <strong>Redis</strong></span>
+      <span>Docs: <strong>HTML → Playwright PDF</strong></span>
+      <span>DB: <strong>SQLite + Companies table</strong></span>
+      <span>n8n: <strong>Webhook integration ready</strong></span>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- SECTION A — WHAT THE AGENT DOES                -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section" id="what-the-agent-does">
+  <!-- ═══ WHAT THE AGENT DOES ══════════════════════════════════════════════ -->
+  <div class="section" id="agent">
     <div class="section-header">
-      <span class="tag tag-section">Section A</span>
-      <h2>What the Agent Does</h2>
-      <p>Product view and technical view of the PipeJob automation agent.</p>
+      <span class="tag tag-phase">Agent Overview</span>
+      <h2>What PipeJob Does</h2>
     </div>
-
-    <div class="grid-2" style="margin-bottom:24px">
+    <div class="grid-2">
       <div class="card">
-        <h3>🎯 Product View — What Problem It Solves</h3>
-        <p style="font-size:0.88rem;color:var(--muted);margin-bottom:12px">
-          Job searching is repetitive and time-consuming. PipeJob automates the mechanical parts of the process while keeping the human in the loop for decisions that matter.
-        </p>
+        <h3>🎯 Product View</h3>
         <ul class="plain">
-          <li>Discovers job listings from Indeed and Stepstone automatically</li>
-          <li>Scores each job against your master CV using Claude AI (0–100 match)</li>
-          <li>Generates a <em>tailored</em> CV and cover letter as DOCX files per job</li>
-          <li>Auto-fills application forms and uploads documents via browser automation</li>
-          <li>Enforces a daily application rate limit to avoid spam behavior (default: 5/day)</li>
-          <li>Provides a real-time dashboard to track all applications and their status</li>
+          <li>Discovers job listings from Indeed &amp; Stepstone via Playwright scraping</li>
+          <li>Scores each job against your master CV using Claude Sonnet 4 (0–100 match)</li>
+          <li>Generates a <em>tailored</em> CV and cover letter as <strong>PDF</strong> per job</li>
+          <li>Auto-fills application forms and uploads files via browser automation</li>
+          <li>Enforces 5 applications/day rate limit via Redis</li>
+          <li>Real-time dashboard with SSE live feed for all status changes</li>
+          <li>Company reference dataset: 40 German tech companies pre-seeded</li>
         </ul>
-        <hr class="divider" />
-        <p style="font-size:0.82rem;color:var(--muted)"><strong style="color:var(--text)">Human stays in control of:</strong> triggering discovery, deciding which jobs to analyse/apply, skipping bad fits, managing the master CV, and reviewing documents before submission.</p>
-      </div>
-
-      <div class="card">
-        <h3>⚙️ Technical View — How It Works</h3>
-        <ul class="plain">
-          <li><strong style="color:var(--text)">Discovery:</strong> Playwright + Stealth scrapes Indeed (CSS selectors) and Stepstone (API interception). Anti-bot: rotating user-agents, random viewports, human-like delays (2–6s), mouse simulation.</li>
-          <li><strong style="color:var(--text)">Analysis:</strong> Full job description + master CV sent to Claude Sonnet 4. Returns match score, required/missing keywords, tailored summary, and a cover letter draft.</li>
-          <li><strong style="color:var(--text)">Document Generation:</strong> <code>docx</code> library builds DOCX files. CV highlights required keywords in bold. Cover letter uses Claude's draft. Output goes to <code>./outputs/{jobId}/</code>.</li>
-          <li><strong style="color:var(--text)">Submission:</strong> Playwright navigates to job URL, detects form fields by regex on name/id/placeholder, fills them, uploads DOCX files, clicks submit. Dev mode = dry run (no actual submit).</li>
-          <li><strong style="color:var(--text)">Persistence:</strong> SQLite stores every application's full lifecycle, status history, form fields used, match score, and file paths.</li>
-          <li><strong style="color:var(--text)">Rate Limiting:</strong> Redis tracks timestamps in a 24-hour rolling window. The <code>applicationRateLimiter</code> middleware enforces this before the apply endpoint.</li>
-          <li><strong style="color:var(--text)">Real-time UI:</strong> Server-Sent Events (SSE) stream from <code>/api/jobs/stream</code> push live updates to the frontend <code>LiveFeed</code> component.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="grid-3">
-      <div class="card">
-        <h3 style="color:var(--green)">✅ Fully Implemented</h3>
-        <ul class="plain">
-          <li>Indeed scraper (pagination, card extraction)</li>
-          <li>Stepstone scraper (API interception)</li>
-          <li>Claude JD analysis + match scoring</li>
-          <li>DOCX CV + cover letter generation</li>
-          <li>Form auto-fill + file upload</li>
-          <li>Dry-run mode (dev safety)</li>
-          <li>SQLite persistence + WAL</li>
-          <li>Redis rate limiter middleware</li>
-          <li>SSE live event stream</li>
-          <li>Dashboard, JobDetail, CV Editor pages</li>
-          <li>Status history timeline</li>
-          <li>DOCX download endpoint</li>
-          <li>Master CV editor (JSON in/out)</li>
-        </ul>
+        <hr class="divider"/>
+        <p style="font-size:0.82rem;color:var(--muted)"><strong style="color:var(--text)">Human in the loop:</strong> Triggering discovery, deciding which jobs to analyse/skip, reviewing generated PDFs before applying. n8n adds an optional human-approval checkpoint before submission.</p>
       </div>
       <div class="card">
-        <h3 style="color:var(--accent3)">⚠️ Partial / Fragile</h3>
+        <h3>⚙️ Technical Stack</h3>
         <ul class="plain">
-          <li>Stepstone API interception — relies on undocumented API structure that may change without notice</li>
-          <li>Form field detection — pure regex pattern-matching, no semantic understanding</li>
-          <li><code>analysis</code> not persisted to DB — lost after server restart (see Known Issues)</li>
-          <li>Cron job (<code>cron/jobs.ts</code>) fetches from Remotive API, separate from scraper flow</li>
-          <li><code>checkDailyLimit()</code> called without <code>await</code> inside apply route — always bypassed</li>
-          <li>Indeed uses CSS selectors — vulnerable to DOM changes</li>
-          <li>LinkedIn source declared in types but not implemented</li>
-          <li><code>server/src/services/ai.ts</code> is marked deprecated but still present</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h3 style="color:var(--accent4)">🔑 Requires External Credentials</h3>
-        <ul class="plain">
-          <li><code>ANTHROPIC_API_KEY</code> — required for analysis &amp; generation</li>
-          <li>Indeed / Stepstone — no credentials needed (public pages), but scraping may be blocked</li>
-          <li><code>TELEGRAM_TOKEN</code> + <code>TELEGRAM_CHAT_ID</code> — optional, config present but no implementation found</li>
-          <li><code>GOOGLE_SHEET_ID</code> — optional, config present but no implementation found</li>
-          <li>Redis — required for rate limiting (Docker or native)</li>
-          <li>Playwright browsers — must run <code>npx playwright install</code></li>
+          <li><strong style="color:var(--text)">Discovery:</strong> Playwright + Stealth, Indeed CSS selectors + Stepstone API interception. Dynamic location parameter.</li>
+          <li><strong style="color:var(--text)">Analysis:</strong> Claude Sonnet 4 — match score, keywords, tailored summary, cover letter draft. Full JDAnalysis now persisted to SQLite.</li>
+          <li><strong style="color:var(--text)">PDF Generation (NEW):</strong> HTML templates rendered to PDF via Playwright page.pdf(). No DOCX library needed. Professional layout with keyword highlighting.</li>
+          <li><strong style="color:var(--text)">Companies DB (NEW):</strong> SQLite companies table with 40 seeded German tech companies. Sector/city/hiring metadata.</li>
+          <li><strong style="color:var(--text)">n8n Webhooks (NEW):</strong> 5 integration endpoints for orchestration — trigger discovery, poll pending, approve apply, push status updates, get summary.</li>
+          <li><strong style="color:var(--text)">Rate limiting:</strong> Redis-backed 24h rolling window. Both middleware AND in-handler check now correct.</li>
         </ul>
       </div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- SECTION — ARCHITECTURE                         -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section" id="architecture">
+  <!-- ═══ USER WORKFLOW ════════════════════════════════════════════════════ -->
+  <div class="section" id="workflow">
     <div class="section-header">
-      <span class="tag tag-section">Section B</span>
-      <h2>System Architecture</h2>
-      <p>How client, server, services, and external systems connect.</p>
+      <span class="tag tag-phase">Workflow</span>
+      <h2>End-to-End User Workflow</h2>
+      <p>Steps a user takes in the app, now with the full Discover UI.</p>
     </div>
 
-    <div class="arch-grid">
-      <!-- CLIENT -->
-      <div class="arch-col">
-        <div class="arch-layer">Client (Port 5173)</div>
-        <div class="arch-box"><strong>Dashboard.tsx</strong><span>Job table, summary cards, Analyse / Generate / Apply action buttons, score badges. Polls every 30s.</span></div>
-        <div class="arch-box"><strong>JobDetail.tsx</strong><span>Single job view: analysis panel, status timeline, download links, Skip button.</span></div>
-        <div class="arch-box"><strong>CVEditor.tsx</strong><span>Form for editing master CV fields. GET + POST to /api/cv.</span></div>
-        <div class="arch-box"><strong>LiveFeed.tsx</strong><span>SSE listener via useSSE hook. Displays real-time job_update events.</span></div>
-        <div class="arch-box"><strong>api/client.ts</strong><span>Axios wrapper for all /api/* calls. Base URL from VITE_API_URL or localhost:3001.</span></div>
-      </div>
-
-      <!-- ARROW 1 -->
-      <div class="arch-arrow-col"><span class="arr">⇄</span></div>
-
-      <!-- SERVER -->
-      <div class="arch-col">
-        <div class="arch-layer">Server (Port 3001)</div>
-        <div class="arch-box"><strong>routes/jobs.ts</strong><span>Discover, analyse, generate, apply, status update, SSE stream.</span></div>
-        <div class="arch-box"><strong>routes/cv.ts</strong><span>Read/write master-cv.json, serve DOCX file downloads.</span></div>
-        <div class="arch-box"><strong>middleware/rateLimiter.ts</strong><span>Redis-backed 24h rolling window. Blocks apply if ≥5 submissions.</span></div>
-        <div class="arch-box"><strong>services/scraper/</strong><span>indeed.ts (CSS selectors), stepstone.ts (API intercept), fingerprint.ts (anti-bot headers).</span></div>
-        <div class="arch-box"><strong>services/documents/analyser.ts</strong><span>Sends raw JD + master CV to Claude. Returns JDAnalysis JSON.</span></div>
-        <div class="arch-box"><strong>services/documents/generator.ts</strong><span>Builds CV + cover letter DOCX using docx library.</span></div>
-        <div class="arch-box"><strong>services/submission/formFiller.ts</strong><span>Playwright form detection, filling, file upload, submit (dry-run in dev).</span></div>
-        <div class="arch-box"><strong>db/schema.ts</strong><span>SQLite CRUD: insertApplication, updateApplicationStatus, getApplication, listApplications.</span></div>
-        <div class="arch-box"><strong>events.ts</strong><span>EventEmitter. emitJobEvent() called at each status transition → SSE stream.</span></div>
-      </div>
-
-      <!-- ARROW 2 -->
-      <div class="arch-arrow-col"><span class="arr">→</span></div>
-
-      <!-- EXTERNAL -->
-      <div class="arch-col">
-        <div class="arch-layer">External / Storage</div>
-        <div class="arch-box"><strong>Claude Sonnet 4 API</strong><span>analysis calls. Requires ANTHROPIC_API_KEY. Max 4096 tokens output. JSON-only system prompt.</span></div>
-        <div class="arch-box"><strong>Indeed / Stepstone</strong><span>Public job listing pages. No auth. Bot detection risk. Rate limited by scrape delays.</span></div>
-        <div class="arch-box"><strong>SQLite (WAL)</strong><span>data/applications.sqlite. Applications table. Indexes on status + company.</span></div>
-        <div class="arch-box"><strong>Redis</strong><span>Rate limiter timestamps only. Key: rate_limiter:applications. 24h TTL.</span></div>
-        <div class="arch-box"><strong>File System</strong><span>master-cv.json (read/write), outputs/{jobId}/*.docx, logs/error.log + app.log, screenshots/{jobId}-before-submit.png</span></div>
-        <div class="arch-box" style="border-color:#8892b044"><strong style="color:var(--muted)">Telegram / Google Sheets</strong><span>Config keys present (TELEGRAM_TOKEN, GOOGLE_SHEET_ID) but no implementation found in codebase.</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- SECTION — USER WORKFLOW                        -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section" id="user-workflow">
-    <div class="section-header">
-      <span class="tag tag-section">Section B cont.</span>
-      <h2>User Workflow & Status Lifecycle</h2>
-      <p>End-to-end steps a user takes, and the corresponding job status transitions.</p>
-    </div>
-
-    <div class="pipeline" style="margin-bottom:32px">
+    <div class="pipeline" style="margin-bottom:28px">
       <div class="pipeline-step s1">
         <div class="step-num">1</div>
         <div class="step-title">Configure CV</div>
-        <div class="step-desc">Open CV Editor. Fill in personal details, skills, experience, education, languages. Save to master-cv.json.</div>
-        <span class="step-badge ok-badge">One-time setup</span>
+        <div class="step-desc">Open CV Editor at /cv. Fill personal details, skills, experience, education, languages. Save.</div>
       </div>
       <div class="pipeline-arrow">→</div>
       <div class="pipeline-step s2">
         <div class="step-num">2</div>
         <div class="step-title">Discover Jobs</div>
-        <div class="step-desc">Click Discover on Dashboard. Provide keywords + sources (indeed, stepstone). Playwright scrapes listings.</div>
-        <span class="step-badge st-discovered" style="font-size:0.68rem;padding:2px 6px">→ discovered</span>
+        <div class="step-desc">Dashboard now has keyword input, location field, source checkboxes (indeed/stepstone), and Discover button.</div>
+        <span class="step-new">NEW UI</span>
       </div>
       <div class="pipeline-arrow">→</div>
       <div class="pipeline-step s3">
         <div class="step-num">3</div>
         <div class="step-title">Analyse JD</div>
-        <div class="step-desc">Click Analyse. Raw JD + master CV sent to Claude. Returns match score, keywords, suggested summary, cover letter draft.</div>
-        <span class="step-badge st-analysed" style="font-size:0.68rem;padding:2px 6px">→ analysed</span>
+        <div class="step-desc">Click Analyse. Claude returns match score, keywords, tailored summary, cover letter draft. Now persisted to DB.</div>
       </div>
       <div class="pipeline-arrow">→</div>
       <div class="pipeline-step s4">
         <div class="step-num">4</div>
-        <div class="step-title">Generate Docs</div>
-        <div class="step-desc">Click Generate. Creates tailored cv.docx and cover-letter.docx in outputs/{jobId}/. Download links appear.</div>
-        <span class="step-badge st-docs" style="font-size:0.68rem;padding:2px 6px">→ documents_ready</span>
+        <div class="step-title">Generate PDFs</div>
+        <div class="step-desc">HTML template rendered to PDF via Playwright. CV with bold keywords, cover letter with Claude's draft.</div>
+        <span class="step-new">PDF, not DOCX</span>
       </div>
       <div class="pipeline-arrow">→</div>
       <div class="pipeline-step s5">
         <div class="step-num">5</div>
         <div class="step-title">Apply</div>
-        <div class="step-desc">Click Apply. Playwright fills form, uploads DOCX files. Dev = dry run. Production = actual submission.</div>
-        <span class="step-badge st-applied" style="font-size:0.68rem;padding:2px 6px">→ applied</span>
+        <div class="step-desc">Playwright fills form, uploads PDFs. Dev = dry run (no actual submit). Rate limit enforced.</div>
       </div>
       <div class="pipeline-arrow">→</div>
       <div class="pipeline-step s6">
         <div class="step-num">6</div>
         <div class="step-title">Track</div>
-        <div class="step-desc">Monitor status, update manually (interview, rejected, skipped). Live feed shows real-time events. History timeline in JobDetail.</div>
-        <span class="step-badge st-interview" style="font-size:0.68rem;padding:2px 6px">interview / rejected</span>
+        <div class="step-desc">Live feed, status history timeline in JobDetail. Manual status overrides. n8n can push status updates via webhook.</div>
       </div>
     </div>
 
     <div class="card">
-      <h3 style="margin-bottom:16px">Full Status Transition Map</h3>
+      <h3 style="margin-bottom:14px">Status Lifecycle</h3>
       <div class="status-flow">
         <span class="status-pill st-discovered">discovered</span>
         <span class="status-arrow">→</span>
@@ -469,733 +262,409 @@
         <span class="status-pill st-applying">applying</span>
         <span class="status-arrow">→</span>
         <span class="status-pill st-applied">applied</span>
-        <span class="status-arrow">→</span>
-        <span class="status-pill st-interview">interview</span>
-        <br style="width:100%;flex-basis:100%"/>
-        <span style="margin-top:8px;width:100%;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-          <span style="color:var(--muted);font-size:0.8rem;">From any non-terminal state:</span>
+        <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;margin-top:8px">
+          <span style="font-size:0.8rem;color:var(--muted)">Any state →</span>
           <span class="status-pill st-skipped">skipped</span>
-          <span class="status-arrow">&nbsp;</span>
           <span class="status-pill st-error">error</span>
-          <span class="status-arrow">&nbsp;</span>
-          <span class="status-pill" style="background:#fc5c6522;border-color:#fc5c6566;color:var(--accent4)">rejected</span>
+          <span class="status-pill" style="background:#fd964422;border-color:#fd964466;color:#fd9644">rejected</span>
+          <span class="status-pill" style="background:#26de8122;border-color:#26de8166;color:var(--green)">interview</span>
         </span>
       </div>
-      <p style="font-size:0.78rem;color:var(--muted);margin-top:16px">
-        <strong style="color:var(--text)">Note:</strong> The <code>PATCH /api/jobs/:id/status</code> endpoint accepts any valid <code>JobStatus</code> value, so manual status overrides are always possible from the frontend or via API.
-      </p>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- SECTION — API MAP                              -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section" id="api-map">
+  <!-- ═══ ARCHITECTURE ═════════════════════════════════════════════════════ -->
+  <div class="section" id="architecture">
     <div class="section-header">
-      <span class="tag tag-section">Section B cont.</span>
-      <h2>Backend API Map</h2>
-      <p>All available endpoints, their inputs, outputs, and dependencies.</p>
+      <span class="tag tag-phase">Architecture</span>
+      <h2>System Architecture</h2>
+    </div>
+    <div class="grid-3">
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px">Client (Port 5173)</div>
+        <div class="arch-box"><strong>Dashboard.tsx <span class="new-badge">UPDATED</span></strong><span>Discover panel with keyword tags, location, source checkboxes. Jobs table with Analyse/Generate/Apply per row. LiveFeed SSE.</span></div>
+        <div class="arch-box"><strong>JobDetail.tsx</strong><span>Match score bar, required/missing keywords, suggested summary, status history, download CV/cover letter links.</span></div>
+        <div class="arch-box"><strong>CVEditor.tsx</strong><span>Full master CV editor — personal info, skills, experience, education, languages.</span></div>
+        <div class="arch-box"><strong>api/client.ts <span class="fixed-badge">FIXED</span></strong><span>discoverJobs() now correctly passes location. All API calls via axios.</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px">Server (Port 3001)</div>
+        <div class="arch-box"><strong>routes/jobs.ts <span class="fixed-badge">FIXED</span></strong><span>Discover now accepts location. Validation improved. Analysis persisted via saveAnalysis(). await checkDailyLimit() fixed.</span></div>
+        <div class="arch-box"><strong>routes/cv.ts <span class="fixed-badge">UPDATED</span></strong><span>Zod validation on POST /api/cv. Download serves PDF first, DOCX fallback for legacy jobs.</span></div>
+        <div class="arch-box"><strong>routes/companies.ts <span class="new-badge">NEW</span></strong><span>GET/POST /api/companies. Filter by sector, hiring status, limit.</span></div>
+        <div class="arch-box"><strong>routes/webhooks.ts <span class="new-badge">NEW</span></strong><span>5 n8n webhook endpoints. Optional WEBHOOK_SECRET auth. Covers discover, pending-analysis, pending-review, approve-apply, status-summary, status-update.</span></div>
+        <div class="arch-box"><strong>documents/generator.ts <span class="new-badge">REWRITTEN</span></strong><span>Playwright PDF generation. HTML → page.pdf(). No more docx library. cv.pdf + cover-letter.pdf per job.</span></div>
+        <div class="arch-box"><strong>documents/templates/cv.ts <span class="new-badge">NEW</span></strong><span>buildCVHtml() + buildCoverLetterHtml(). HTML template functions with keyword highlighting, print-optimized CSS.</span></div>
+        <div class="arch-box"><strong>scraper/index.ts <span class="fixed-badge">FIXED</span></strong><span>scrapeJobs() now accepts location param (default: Deutschland). Passed from route.</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px">Storage / External</div>
+        <div class="arch-box"><strong>SQLite — applications table</strong><span>Full lifecycle, status_history, analysis_json (Phase 2 fix), cv_path/cover_letter_path now .pdf.</span></div>
+        <div class="arch-box"><strong>SQLite — companies table <span class="new-badge">NEW</span></strong><span>40 German tech companies seeded. name, sector, city, is_actively_hiring, hiring_sources, source_confidence.</span></div>
+        <div class="arch-box"><strong>Redis</strong><span>Rate limiter only. 24h rolling window. Key: rate_limiter:applications.</span></div>
+        <div class="arch-box"><strong>File System</strong><span>outputs/{jobId}/cv.pdf + cover-letter.pdf (new). Logs. Screenshots.</span></div>
+        <div class="arch-box"><strong>Claude Sonnet 4 API</strong><span>JD analysis. Requires ANTHROPIC_API_KEY. Max 4096 tokens. JSON-only system prompt.</span></div>
+        <div class="arch-box" style="border-color:#8892b044"><strong style="color:var(--muted)">Telegram / Google Sheets</strong><span>Config keys present, no implementation. Future work.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PDF GENERATION ═══════════════════════════════════════════════════ -->
+  <div class="section" id="pdf-gen">
+    <div class="section-header">
+      <span class="tag tag-new" style="margin-bottom:10px">New</span>
+      <h2>HTML → PDF Document Generation</h2>
+      <p>Replaced DOCX library with Playwright-based PDF rendering.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>How It Works</h3>
+        <ol style="list-style:decimal;padding-left:18px;font-size:0.85rem;line-height:2">
+          <li><code>buildCVHtml(masterCV, analysis)</code> builds HTML string from template</li>
+          <li>Skills matching <code>requiredKeywords</code> are styled with a blue highlight badge</li>
+          <li>Experience bullets use <code>tailoredBullets[company]</code> when available</li>
+          <li>Playwright opens the HTML via <code>page.setContent()</code></li>
+          <li><code>page.pdf({ format: 'A4', printBackground: true })</code> renders to buffer</li>
+          <li>Saved as <code>outputs/{jobId}/cv.pdf</code> and <code>cover-letter.pdf</code></li>
+          <li>Download route detects PDF first, falls back to legacy DOCX if needed</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Why This Is Better Than DOCX</h3>
+        <ul class="plain">
+          <li>CSS is easier to iterate on than docx paragraph/run objects</li>
+          <li>Visual preview: open any .html in browser before generating PDF</li>
+          <li>Print-media CSS (<code>@page</code>, <code>@media print</code>) gives precise layout control</li>
+          <li>Playwright already installed — no new dependency</li>
+          <li>PDFs are universally readable, no Word required</li>
+          <li>Keyword highlighting (blue badges) is trivially done in CSS</li>
+          <li>Template files: <code>server/src/services/documents/templates/cv.ts</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COMPANIES DATABASE ══════════════════════════════════════════════ -->
+  <div class="section" id="companies">
+    <div class="section-header">
+      <span class="tag tag-new" style="margin-bottom:10px">New</span>
+      <h2>German Company Reference System</h2>
+      <p>A curated, maintainable foundation — not a complete GmbH registry.</p>
     </div>
 
+    <div class="warn-box">
+      <h4>⚠️ Scope Limitation — Honest Assessment</h4>
+      <p>Germany has ~3.7 million GmbHs. A complete registry is NOT feasible to maintain in-repo. This system provides a <strong>practical curated reference</strong> of ~40 German tech companies that are actively hiring, as a starting foundation. For full-scale data acquisition, see the "Future Data Strategy" section below.</p>
+    </div>
+
+    <div class="grid-3" style="margin-top:20px">
+      <div class="card">
+        <h3>What's Implemented</h3>
+        <ul class="plain">
+          <li>SQLite <code>companies</code> table with full schema</li>
+          <li>40 German tech companies pre-seeded (SAP, Zalando, N26, Celonis, etc.)</li>
+          <li>Fields: name, sector, city, state, size_range, is_actively_hiring, hiring_sources, source_confidence</li>
+          <li>Auto-seed on first server start (idempotent)</li>
+          <li><code>GET /api/companies</code> with sector/hiring/limit filters</li>
+          <li><code>POST /api/companies</code> to add/update entries</li>
+          <li>Migration-safe: works with existing databases</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Schema</h3>
+        <pre style="font-size:0.72rem;color:var(--accent2);line-height:1.7">companies (
+  id             TEXT PRIMARY KEY
+  name           TEXT
+  name_normalized TEXT (indexed)
+  website        TEXT
+  linkedin_url   TEXT
+  sector         TEXT (indexed)
+  city / state   TEXT
+  country        TEXT DEFAULT 'DE'
+  size_range     TEXT
+  is_actively_hiring INT (indexed)
+  hiring_sources TEXT (JSON array)
+  notes          TEXT
+  source         TEXT ('seed'|'manual'|'scraped')
+  source_confidence TEXT ('high'|'medium'|'low')
+  created_at / updated_at TEXT
+)</pre>
+      </div>
+      <div class="card">
+        <h3>Future Data Strategy</h3>
+        <ul class="plain">
+          <li><strong style="color:var(--text)">Bundesanzeiger API</strong> — federal gazette company registrations</li>
+          <li><strong style="color:var(--text)">Handelsregister</strong> — official German company register</li>
+          <li><strong style="color:var(--text)">OpenCorporates</strong> — open data, has DE coverage</li>
+          <li><strong style="color:var(--text)">Northdata / Echobot</strong> — commercial DE company APIs</li>
+          <li><strong style="color:var(--text)">Job board scraping</strong> — extract employer names from Indeed/Stepstone, normalize, upsert</li>
+          <li><strong style="color:var(--text)">Manual curation</strong> — most practical for targeted industry sectors</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ N8N INTEGRATION ══════════════════════════════════════════════════ -->
+  <div class="section" id="n8n">
+    <div class="section-header">
+      <span class="tag tag-new" style="margin-bottom:10px">New</span>
+      <h2>n8n Integration Workflow</h2>
+      <p>PipeJob as an n8n-orchestrated agent — webhook contract, boundaries, and human-in-the-loop checkpoints.</p>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:24px">
+      <div class="card">
+        <h3>Integration Boundaries</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px">PipeJob handles the <em>execution</em>. n8n handles the <em>orchestration</em>.</p>
+        <table style="width:100%;font-size:0.8rem;border-collapse:collapse">
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:6px;color:var(--muted);font-size:0.72rem">Responsibility</th>
+            <th style="text-align:left;padding:6px;color:var(--muted);font-size:0.72rem">PipeJob</th>
+            <th style="text-align:left;padding:6px;color:var(--muted);font-size:0.72rem">n8n</th>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px">Scraping</td><td style="padding:6px;color:var(--green)">✓ executes</td><td style="padding:6px;color:var(--muted)">triggers</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px">AI analysis</td><td style="padding:6px;color:var(--green)">✓ executes</td><td style="padding:6px;color:var(--muted)">polls/triggers</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px">PDF generation</td><td style="padding:6px;color:var(--green)">✓ executes</td><td style="padding:6px;color:var(--muted)">triggers</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px">Human review</td><td style="padding:6px;color:var(--muted)">dashboard</td><td style="padding:6px;color:var(--accent3)">✓ Wait node</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px">Scheduling</td><td style="padding:6px;color:var(--muted)">—</td><td style="padding:6px;color:var(--accent3)">✓ Schedule trigger</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px">Notifications</td><td style="padding:6px;color:var(--muted)">—</td><td style="padding:6px;color:var(--accent3)">✓ Slack/email nodes</td></tr>
+          <tr><td style="padding:6px">Retry logic</td><td style="padding:6px;color:var(--muted)">—</td><td style="padding:6px;color:var(--accent3)">✓ Error workflow</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Authentication</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px">Set <code>WEBHOOK_SECRET</code> in <code>server/.env</code>. All n8n requests must include:</p>
+        <pre style="font-size:0.8rem;color:var(--accent2);line-height:1.6">Header: X-Webhook-Secret: your-secret-here</pre>
+        <p style="font-size:0.78rem;color:var(--muted);margin-top:10px">In development with empty <code>WEBHOOK_SECRET</code>, auth is skipped automatically. In production (<code>NODE_ENV=production</code>), the secret is required.</p>
+        <hr class="divider"/>
+        <p style="font-size:0.82rem;color:var(--muted)">In n8n, add a <strong>Header Auth credential</strong> with name <code>X-Webhook-Secret</code> and attach it to each HTTP Request node pointing to PipeJob.</p>
+      </div>
+    </div>
+
+    <!-- n8n flow diagram -->
+    <div class="card" style="margin-bottom:24px">
+      <h3 style="margin-bottom:20px">n8n Workflow Steps</h3>
+      <div class="n8n-flow">
+        <div class="n8n-step n8n-auto">
+          <div class="n8n-node" style="background:#45aaf222">⏰</div>
+          <div class="n8n-content">
+            <h4>1. Schedule Trigger (n8n) — every 6 hours</h4>
+            <p>n8n fires the workflow on a schedule. No PipeJob involvement yet.</p>
+          </div>
+        </div>
+        <div class="n8n-arrow">↓</div>
+        <div class="n8n-step n8n-auto">
+          <div class="n8n-node" style="background:#45aaf222">🔍</div>
+          <div class="n8n-content">
+            <h4>2. POST /api/webhooks/n8n/discover</h4>
+            <p>Body: <code>{ keywords, sources, location }</code>. PipeJob runs Playwright scraper, inserts jobs to DB, returns <code>{ discovered, ids }</code>.</p>
+          </div>
+        </div>
+        <div class="n8n-arrow">↓</div>
+        <div class="n8n-step n8n-auto">
+          <div class="n8n-node" style="background:#45aaf222">📋</div>
+          <div class="n8n-content">
+            <h4>3. GET /api/webhooks/n8n/pending-analysis</h4>
+            <p>Returns all 'discovered' jobs with their <code>analyseUrl</code>. n8n iterates and fires POST to each analyseUrl.</p>
+          </div>
+        </div>
+        <div class="n8n-arrow">↓</div>
+        <div class="n8n-step n8n-auto">
+          <div class="n8n-node" style="background:#6c63ff22">🤖</div>
+          <div class="n8n-content">
+            <h4>4. POST /api/jobs/:id/analyse (loop for each job)</h4>
+            <p>Claude analyses each JD. Status becomes 'analysed'. Match score and full analysis stored in SQLite.</p>
+          </div>
+        </div>
+        <div class="n8n-arrow">↓</div>
+        <div class="n8n-step n8n-auto">
+          <div class="n8n-node" style="background:#6c63ff22">📄</div>
+          <div class="n8n-content">
+            <h4>5. POST /api/jobs/:id/generate (loop, only for score ≥ 60)</h4>
+            <p>n8n can filter by matchScore before triggering generation. PDFs created in outputs/{jobId}/.</p>
+          </div>
+        </div>
+        <div class="n8n-arrow">↓</div>
+        <div class="n8n-step n8n-human">
+          <div class="n8n-node" style="background:#f7b73122">👤</div>
+          <div class="n8n-content">
+            <h4>6. GET /api/webhooks/n8n/pending-review → n8n Wait node</h4>
+            <p><strong>Human-in-the-loop checkpoint.</strong> n8n sends a Slack/email message with job title, company, matchScore, and dashboard link. Workflow pauses. Human opens PipeJob dashboard, reviews PDF, then responds to n8n (approve/skip).</p>
+          </div>
+        </div>
+        <div class="n8n-arrow">↓</div>
+        <div class="n8n-step n8n-auto">
+          <div class="n8n-node" style="background:#26de8122">✅</div>
+          <div class="n8n-content">
+            <h4>7. POST /api/webhooks/n8n/approve-apply</h4>
+            <p>Body: <code>{ jobId, approvedBy }</code>. PipeJob triggers apply internally, respects rate limit. Returns apply result.</p>
+          </div>
+        </div>
+        <div class="n8n-arrow">↓</div>
+        <div class="n8n-step n8n-auto">
+          <div class="n8n-node" style="background:#26de8122">📊</div>
+          <div class="n8n-content">
+            <h4>8. GET /api/webhooks/n8n/status-summary → Slack notification</h4>
+            <p>n8n fetches daily summary (total, byStatus, recentApplied) and sends to Slack or email as a digest.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Webhook Endpoints Reference</h3>
+        <table class="api-table">
+          <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/webhooks/n8n/discover</span></td><td>Trigger scraping run</td></tr>
+            <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/webhooks/n8n/pending-analysis</span></td><td>Jobs awaiting analysis</td></tr>
+            <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/webhooks/n8n/pending-review</span></td><td>Jobs awaiting human review</td></tr>
+            <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/webhooks/n8n/approve-apply</span></td><td>Human-approved apply</td></tr>
+            <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/webhooks/n8n/status-summary</span></td><td>Summary for notifications</td></tr>
+            <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/webhooks/n8n/status-update</span></td><td>Push status change to PipeJob</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Error & Retry Strategy (n8n side)</h3>
+        <ul class="plain">
+          <li>Wrap each HTTP Request node in a <strong>Try/Catch</strong> Error workflow</li>
+          <li>If discover fails → retry after 30min with exponential backoff</li>
+          <li>If analyse fails → mark job as 'error' via <code>PATCH /api/jobs/:id/status</code>, notify, skip</li>
+          <li>If apply hits 429 → read <code>retryAfter</code> from response, schedule retry with n8n's Wait node</li>
+          <li>Human review timeout → auto-skip after 24h with <code>POST /api/webhooks/n8n/status-update { status: "skipped" }</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ API MAP ══════════════════════════════════════════════════════════ -->
+  <div class="section" id="api">
+    <div class="section-header">
+      <span class="tag tag-phase">API Map</span>
+      <h2>Complete API Reference</h2>
+    </div>
     <div class="card" style="padding:0;overflow:hidden">
       <table class="api-table">
-        <thead>
-          <tr>
-            <th>Method</th>
-            <th>Path</th>
-            <th>Purpose</th>
-            <th>Request</th>
-            <th>Response</th>
-            <th>Side Effects / Deps</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Method</th><th>Path</th><th>Purpose</th><th>Changes</th></tr></thead>
         <tbody>
-          <tr>
-            <td><span class="method m-get">GET</span></td>
-            <td><span class="endpoint">/health</span></td>
-            <td>Server health check</td>
-            <td>—</td>
-            <td><code>{ status: "ok", ts }</code></td>
-            <td>None</td>
-          </tr>
-          <tr>
-            <td><span class="method m-get">GET</span></td>
-            <td><span class="endpoint">/api/jobs</span></td>
-            <td>List all applications</td>
-            <td>Query: <code>status?</code>, <code>limit?</code></td>
-            <td><code>JobApplication[]</code></td>
-            <td><span class="dep-tag">SQLite read</span></td>
-          </tr>
-          <tr>
-            <td><span class="method m-get">GET</span></td>
-            <td><span class="endpoint">/api/jobs/stream</span></td>
-            <td>SSE live event feed</td>
-            <td>—</td>
-            <td>SSE: <code>{ jobId, status, message, ts }</code></td>
-            <td><span class="dep-tag">EventEmitter</span> long-lived connection</td>
-          </tr>
-          <tr>
-            <td><span class="method m-get">GET</span></td>
-            <td><span class="endpoint">/api/jobs/:id</span></td>
-            <td>Get single application</td>
-            <td>Path: <code>:id</code></td>
-            <td><code>JobApplication</code> or 404</td>
-            <td><span class="dep-tag">SQLite read</span></td>
-          </tr>
-          <tr>
-            <td><span class="method m-post">POST</span></td>
-            <td><span class="endpoint">/api/jobs/discover</span></td>
-            <td>Trigger job scraping</td>
-            <td>Body: <code>{ keywords: string[], sources: string[] }</code></td>
-            <td><code>{ discovered: number, ids: string[] }</code></td>
-            <td><span class="dep-tag">Playwright</span> <span class="dep-tag">SQLite write</span> <span class="dep-tag">SSE emit</span> — slow (network scraping)</td>
-          </tr>
-          <tr>
-            <td><span class="method m-post">POST</span></td>
-            <td><span class="endpoint">/api/jobs/:id/analyse</span></td>
-            <td>Analyse JD with Claude AI</td>
-            <td>Path: <code>:id</code>. Reads master-cv.json + rawJD from DB.</td>
-            <td><code>JDAnalysis</code> (matchScore, keywords, summary, coverLetter…)</td>
-            <td><span class="dep-tag">Claude API</span> <span class="dep-tag">SQLite write</span> <span class="dep-tag">SSE emit</span> <span class="warn-tag">analysis NOT persisted to DB</span></td>
-          </tr>
-          <tr>
-            <td><span class="method m-post">POST</span></td>
-            <td><span class="endpoint">/api/jobs/:id/generate</span></td>
-            <td>Generate tailored DOCX documents</td>
-            <td>Path: <code>:id</code>. Requires <code>app.analysis</code> present.</td>
-            <td><code>TailoredOutput</code> { cvPath, coverLetterPath, … }</td>
-            <td><span class="dep-tag">File system write</span> <span class="dep-tag">SQLite write</span> <span class="dep-tag">SSE emit</span> <span class="warn-tag">will fail after server restart</span></td>
-          </tr>
-          <tr>
-            <td><span class="method m-post">POST</span></td>
-            <td><span class="endpoint">/api/jobs/:id/apply</span></td>
-            <td>Submit application via form-filler</td>
-            <td>Path: <code>:id</code>. Requires <code>app.output</code> present.</td>
-            <td><code>{ success: boolean, fieldsUsed: Record&lt;string,string&gt; }</code></td>
-            <td><span class="dep-tag">Playwright</span> <span class="dep-tag">Redis rate limit</span> <span class="dep-tag">SQLite write</span> <span class="dep-tag">SSE emit</span> <span class="dep-tag">Screenshots saved</span></td>
-          </tr>
-          <tr>
-            <td><span class="method m-patch">PATCH</span></td>
-            <td><span class="endpoint">/api/jobs/:id/status</span></td>
-            <td>Manually update job status</td>
-            <td>Body: <code>{ status: JobStatus, note?: string }</code></td>
-            <td><code>{ id, status }</code></td>
-            <td><span class="dep-tag">SQLite write</span> <span class="dep-tag">SSE emit</span></td>
-          </tr>
-          <tr>
-            <td><span class="method m-get">GET</span></td>
-            <td><span class="endpoint">/api/cv</span></td>
-            <td>Read master CV JSON</td>
-            <td>—</td>
-            <td><code>MasterCV</code> JSON object</td>
-            <td><span class="dep-tag">File system read</span> master-cv.json</td>
-          </tr>
-          <tr>
-            <td><span class="method m-post">POST</span></td>
-            <td><span class="endpoint">/api/cv</span></td>
-            <td>Save updated master CV</td>
-            <td>Body: full <code>MasterCV</code> JSON</td>
-            <td><code>{ saved: true }</code></td>
-            <td><span class="dep-tag">File system write</span> overwrites master-cv.json</td>
-          </tr>
-          <tr>
-            <td><span class="method m-get">GET</span></td>
-            <td><span class="endpoint">/api/cv/download/:jobId/:type</span></td>
-            <td>Download generated DOCX file</td>
-            <td>Path: <code>:jobId</code>, <code>:type</code> = "cv" | "cover-letter"</td>
-            <td>DOCX binary stream, <code>Content-Disposition: attachment</code></td>
-            <td><span class="dep-tag">File system read</span> outputs/{jobId}/{type}.docx</td>
-          </tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/health</span></td><td>Server health check</td><td>—</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/jobs</span></td><td>List applications (status?, limit?)</td><td>—</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/jobs/stream</span></td><td>SSE live event feed</td><td>—</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/jobs/:id</span></td><td>Get single application</td><td>—</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/jobs/discover</span></td><td>Trigger scraping</td><td><span class="fixed-badge">FIXED</span> accepts location, improved validation</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/jobs/:id/analyse</span></td><td>Claude JD analysis</td><td><span class="fixed-badge">FIXED</span> analysis persisted to DB via saveAnalysis()</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/jobs/:id/generate</span></td><td>Generate PDF documents</td><td><span class="new-badge">PDF</span> Playwright HTML→PDF, not DOCX</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/jobs/:id/apply</span></td><td>Submit application</td><td><span class="fixed-badge">FIXED</span> await checkDailyLimit()</td></tr>
+          <tr><td><span class="method m-patch">PATCH</span></td><td><span class="endpoint">/api/jobs/:id/status</span></td><td>Manual status update</td><td>—</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/cv</span></td><td>Read master CV</td><td>—</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/cv</span></td><td>Save master CV</td><td><span class="fixed-badge">FIXED</span> Zod validation added</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/cv/download/:jobId/:type</span></td><td>Download CV or cover letter</td><td><span class="new-badge">PDF</span> serves .pdf, DOCX fallback</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/companies</span></td><td>List company reference data</td><td><span class="new-badge">NEW</span> sector?, hiring?, limit?</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/companies</span></td><td>Add/update company entry</td><td><span class="new-badge">NEW</span></td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/webhooks/n8n/discover</span></td><td>n8n: trigger scraping</td><td><span class="new-badge">NEW</span></td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/webhooks/n8n/pending-analysis</span></td><td>n8n: jobs needing analysis</td><td><span class="new-badge">NEW</span></td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/webhooks/n8n/pending-review</span></td><td>n8n: human review queue</td><td><span class="new-badge">NEW</span></td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/webhooks/n8n/approve-apply</span></td><td>n8n: human-approved application</td><td><span class="new-badge">NEW</span></td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><span class="endpoint">/api/webhooks/n8n/status-summary</span></td><td>n8n: daily summary</td><td><span class="new-badge">NEW</span></td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><span class="endpoint">/api/webhooks/n8n/status-update</span></td><td>n8n: push status change</td><td><span class="new-badge">NEW</span></td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- KNOWN ISSUES                                   -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section" id="known-issues">
+  <!-- ═══ BUGS FIXED ═══════════════════════════════════════════════════════ -->
+  <div class="section" id="bugs">
     <div class="section-header">
-      <span class="tag" style="background:var(--accent4);color:#fff;margin-bottom:10px">Bugs Found</span>
-      <h2>Known Issues in the Current Code</h2>
-      <p>Real bugs and gaps identified by reading the source — not speculation.</p>
+      <span class="tag tag-fixed" style="margin-bottom:10px">Bugs Fixed</span>
+      <h2>All Bugs Fixed in Phase 1 & 2</h2>
+    </div>
+    <div class="bug-box">
+      <h4>✅ FIXED (Phase 1): analysis_json never persisted to DB</h4>
+      <p>Added <code>analysis_json</code> column to applications table. <code>saveAnalysis()</code> exported from schema.ts. Called in /analyse route. <code>rowToApplication()</code> now restores full JDAnalysis from DB. Server restarts no longer break the generate flow.</p>
+    </div>
+    <div class="bug-box">
+      <h4>✅ FIXED (Phase 1): checkDailyLimit() called without await</h4>
+      <p>Changed <code>if (!checkDailyLimit())</code> to <code>if (!await checkDailyLimit())</code> in jobs.ts:151. The in-handler rate limit check now actually evaluates the resolved boolean.</p>
+    </div>
+    <div class="bug-box">
+      <h4>✅ FIXED (Phase 2): discoverJobs() location field was silently dropped</h4>
+      <p>client/src/api/client.ts sent <code>location</code>; backend destructured only <code>{ keywords, sources }</code>. Now backend accepts <code>location?</code> and passes it to <code>scrapeJobs()</code>. Scraper default remains 'Deutschland'.</p>
+    </div>
+    <div class="bug-box">
+      <h4>✅ FIXED (Phase 2): No validation on POST /api/cv — could corrupt master-cv.json</h4>
+      <p>Added Zod schema validation (MasterCVSchema) to cv.ts. Invalid bodies return 400 with field-level errors. master-cv.json is only written on valid payloads.</p>
+    </div>
+    <div class="bug-box">
+      <h4>✅ FIXED (Phase 2): Discover UI was completely missing from the frontend</h4>
+      <p>Dashboard.tsx now has a full Discover panel: keyword tag input, location field, source checkboxes, Discover button with loading state, result count, and error feedback.</p>
+    </div>
+    <div class="bug-box">
+      <h4>✅ FIXED (Phase 2): Location hardcoded to 'Deutschland' in scraper</h4>
+      <p><code>scrapeJobs()</code> signature updated to accept optional <code>location</code> parameter. Route passes it through. Default preserved.</p>
     </div>
 
-    <div class="bug-box">
-      <h4>🐛 BUG: <code>checkDailyLimit()</code> called without <code>await</code> — rate limit check always passes</h4>
-      <p><strong>File:</strong> <code>server/src/routes/jobs.ts:149</code>. The call <code>if (!checkDailyLimit())</code> does not await the Promise. A Promise object is always truthy, so this guard never fires. The <code>applicationRateLimiter</code> middleware (line 143) still works correctly, but the in-handler check is a no-op.</p>
-    </div>
-
-    <div class="bug-box">
-      <h4>🐛 BUG: <code>app.analysis</code> is never persisted to the database</h4>
-      <p><strong>File:</strong> <code>server/src/routes/jobs.ts:118–140</code>. The <code>/generate</code> route checks <code>if (!app.analysis)</code> before generating documents. However, the <code>JDAnalysis</code> result from <code>/analyse</code> is only returned in the HTTP response — it is never stored in SQLite. After a server restart, <code>getApplication(id)</code> will return the job with <code>analysis: undefined</code>, making document generation impossible for any previously-analysed job. The <code>match_score</code> field is saved, but not the full analysis object.</p>
-    </div>
-
-    <div class="bug-box">
-      <h4>🐛 BUG: <code>discoverJobs()</code> in API client sends <code>location</code> field that backend ignores</h4>
-      <p><strong>File:</strong> <code>client/src/api/client.ts:16</code> sends <code>{ keywords, location, sources }</code> but <code>server/src/routes/jobs.ts:72</code> destructures only <code>{ keywords, sources }</code>. Location is hardcoded to <code>'Deutschland'</code> inside the scraper. Any location input from the frontend is silently dropped.</p>
-    </div>
-
-    <div class="bug-box">
-      <h4>⚠️ GAP: Dashboard "Discover" button not wired to any UI control</h4>
-      <p><strong>File:</strong> <code>client/src/pages/Dashboard.tsx</code>. There is no Discover button or form in the current Dashboard component. The <code>discoverJobs</code> function is imported in <code>api/client.ts</code> but is not called from any visible UI component. Discovery can only be triggered via direct API call.</p>
-    </div>
-
-    <div class="bug-box">
-      <h4>⚠️ GAP: LinkedIn source declared but not implemented</h4>
-      <p><strong>File:</strong> <code>server/src/types/index.ts</code>. The <code>source</code> union type includes <code>'linkedin'</code>, but there is no <code>linkedin.ts</code> scraper file. Passing <code>sources: ["linkedin"]</code> to the discover endpoint will silently return no results.</p>
-    </div>
-
-    <div class="bug-box">
-      <h4>⚠️ GAP: <code>pdf-lib</code> and <code>bull</code> are installed but unused</h4>
-      <p><code>pdf-lib</code> is in <code>server/package.json</code> but no code imports or uses it — documents are DOCX only. <code>bull</code> (Redis job queue) is installed but no queue is configured or used. These are dead weight dependencies.</p>
+    <div class="warn-box" style="margin-top:20px">
+      <h4>⚠️ KNOWN REMAINING ISSUES</h4>
+      <p><strong>Stepstone API interception is fragile</strong> — relies on undocumented internal API structure. May stop working without warning after Stepstone updates. No automatic detection of 0-result scraper runs. | <strong>Indeed CSS selectors</strong> may break on DOM updates. | <strong>LinkedIn source</strong> declared in types but scraper not implemented — passing "linkedin" to discover silently returns 0 results. | <strong>pdf-lib and bull</strong> are installed but unused — can be removed. | <strong>Playwright browser not always closed on error</strong> — may leak processes under heavy failure scenarios.</p>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- SECTION C — TEST PLAN                          -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section" id="test-plan">
+  <!-- ═══ IMPLEMENTATION STATUS ════════════════════════════════════════════ -->
+  <div class="section" id="status">
     <div class="section-header">
-      <span class="tag tag-section">Section C</span>
-      <h2>Testing Plan</h2>
-      <p>Click each area to expand. Tests are ordered by priority within each group.</p>
+      <span class="tag tag-phase">Status</span>
+      <h2>Implementation Status</h2>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="impl-table">
+        <thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Discover Jobs UI (Dashboard)</td><td><span class="tag tag-new">Done</span></td><td>Keywords, location, sources, loading state, result feedback</td></tr>
+          <tr><td>Analysis persistence (analysis_json)</td><td><span class="tag tag-new">Done</span></td><td>Phase 1 fix — server restart safe</td></tr>
+          <tr><td>await checkDailyLimit() fix</td><td><span class="tag tag-new">Done</span></td><td>Phase 1 fix</td></tr>
+          <tr><td>HTML → PDF generation</td><td><span class="tag tag-new">Done</span></td><td>Playwright page.pdf(), keyword highlighting, DOCX fallback</td></tr>
+          <tr><td>CV route Zod validation</td><td><span class="tag tag-new">Done</span></td><td>POST /api/cv now validates before writing</td></tr>
+          <tr><td>Location parameter in scraper</td><td><span class="tag tag-new">Done</span></td><td>Dynamic, defaults to Deutschland</td></tr>
+          <tr><td>German company reference system</td><td><span class="tag tag-new">Done</span></td><td>40 companies seeded, full CRUD API</td></tr>
+          <tr><td>n8n webhook integration</td><td><span class="tag tag-new">Done</span></td><td>6 endpoints, auth middleware, full workflow documented</td></tr>
+          <tr><td>LinkedIn scraper</td><td><span class="tag tag-future">Future</span></td><td>Type declared, no implementation. Requires login session.</td></tr>
+          <tr><td>Telegram notifications</td><td><span class="tag tag-future">Future</span></td><td>Config keys present, no code</td></tr>
+          <tr><td>Google Sheets sync</td><td><span class="tag tag-future">Future</span></td><td>Config key present, no code</td></tr>
+          <tr><td>Full German GmbH registry</td><td><span class="tag tag-future">Future</span></td><td>Not feasible in-repo. See data strategy section.</td></tr>
+          <tr><td>Scraper health monitoring (0-result alerts)</td><td><span class="tag tag-future">Future</span></td><td>No alerting when scraper silently returns 0</td></tr>
+          <tr><td>Remove pdf-lib / bull (unused)</td><td><span class="tag tag-partial">Partial</span></td><td>Still in package.json, not harmful but wasteful</td></tr>
+        </tbody>
+      </table>
     </div>
 
-    <!-- 1. Backend API Tests -->
-    <div class="test-area" id="ta-backend">
-      <div class="test-area-header" onclick="toggleArea('ta-backend')">
-        <span class="test-area-title">1. Backend API Testing</span>
-        <div class="test-area-meta">
-          <span class="tag type-api">API</span>
-          <span class="tag priority-high">High Priority</span>
-          <span class="chevron">▾</span>
-        </div>
-      </div>
-      <div class="test-area-body">
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px">Can be tested without real external credentials by mocking Claude API and Playwright. Use <strong>Supertest + Jest/Vitest</strong>.</p>
+    <div class="card" style="margin-top:20px">
+      <h3>How to Run</h3>
+      <pre style="font-size:0.82rem;color:var(--accent2);line-height:2">
+# Start Redis (Docker)
+docker run -d -p 6379:6379 --name pipejob-redis redis:alpine
 
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">GET /health returns 200 with status:ok</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Basic smoke test that server started correctly, express is wired, DB initialized.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> None. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
+# Start server
+cd server && npx tsx src/index.ts
 
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">GET /api/jobs returns empty array on fresh DB</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Confirms SQLite initialization, <code>listApplications()</code> returns empty array, response shape is correct.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Use in-memory SQLite or temp file. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
+# Start client
+cd client && npm run dev
 
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">POST /api/jobs/discover validates required fields</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Send body without keywords or sources — expect 400 with error message. Validates input guard in route.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> None needed for validation tests. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
+# Verify
+curl http://localhost:3001/health
+curl http://localhost:3001/api/companies?hiring=true&amp;limit=5
 
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">GET /api/jobs/:id returns 404 for unknown ID</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Confirms 404 error handling works. Tests the DB <code>getApplication()</code> not-found path.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> None. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">POST /api/jobs/:id/analyse → mocked Claude response</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag type-int">Integration</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Insert a test job, mock <code>@anthropic-ai/sdk</code> to return a valid JDAnalysis JSON. Verify status updated to 'analysed', match_score saved, response shape correct.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Mock Anthropic SDK. <strong>Can test without credentials:</strong> Yes (with mock). <strong>Also tests bug:</strong> Confirm analysis is NOT in DB after analyse (documents the known gap).</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">POST /api/jobs/:id/generate fails if analysis not present</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Insert a job at 'analysed' status but retrieve fresh from DB (no in-memory analysis). Expect 400 "Job must be analysed first". This documents the known persistence bug.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> None. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">PATCH /api/jobs/:id/status updates correctly</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Insert job, PATCH status to 'skipped', GET job back, confirm status and status_history array has new entry with timestamp.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> None. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">POST /api/jobs/:id/apply is blocked by rate limiter middleware</span>
-            <div class="test-item-tags"><span class="tag type-int">Integration</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Seed Redis with 5 timestamps within the last 24h. Call apply. Expect 429 with retryAfter. Also verifies that the middleware (not the broken in-handler check) is the real guard.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Redis (use real or ioredis-mock). <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">GET /api/cv reads and returns master-cv.json</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Confirms CV file path resolves correctly, returns valid JSON matching MasterCV shape.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> None (use real master-cv.json). <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">POST /api/cv saves and GET /api/cv reads back</span>
-            <div class="test-item-tags"><span class="tag type-int">Integration</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">POST updated CV, then GET — confirm round-trip. <strong>Important:</strong> use a temp copy of master-cv.json in tests to avoid corrupting the real one.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Temp file path via env override. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">GET /api/cv/download/:jobId/:type validates type parameter</span>
-            <div class="test-item-tags"><span class="tag type-api">API</span><span class="tag priority-low">Low</span></div>
-          </div>
-          <div class="test-item-desc">Send type=pdf (invalid) → expect 400. Send valid type but non-existent jobId → expect 404.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> None. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. Frontend Tests -->
-    <div class="test-area" id="ta-frontend">
-      <div class="test-area-header" onclick="toggleArea('ta-frontend')">
-        <span class="test-area-title">2. Frontend UI Testing</span>
-        <div class="test-area-meta">
-          <span class="tag type-ui">UI</span>
-          <span class="tag priority-medium">Medium Priority</span>
-          <span class="chevron">▾</span>
-        </div>
-      </div>
-      <div class="test-area-body">
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px">Use <strong>Vitest + React Testing Library</strong> for component tests. Use <strong>Playwright</strong> (already installed) for E2E UI tests against a running server.</p>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Dashboard renders summary cards with correct counts</span>
-            <div class="test-item-tags"><span class="tag type-ui">UI</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Mock <code>getJobs()</code> to return fixture data. Verify "Total Discovered", "Applied Today", "Docs Ready", "Interviews" counts are correct. <strong>Note:</strong> "Applied Today" counts by <code>appliedAt</code> date, "Docs Ready" and "Interviews" count by <code>job.status</code>.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> MSW or vi.mock for api/client. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Dashboard action buttons appear only for correct status</span>
-            <div class="test-item-tags"><span class="tag type-ui">UI</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Render table rows with jobs at each status. Confirm: "Analyse" button only for 'discovered', "Generate" only for 'analysed', "Apply" only for 'documents_ready'.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Mock getJobs with fixture. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">StatusBadge renders correct color class per status</span>
-            <div class="test-item-tags"><span class="tag type-unit">Unit</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Snapshot or class assertion test for each possible JobStatus value.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> None. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">JobDetail shows analysis panel when analysis is present</span>
-            <div class="test-item-tags"><span class="tag type-ui">UI</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Mock <code>getJob()</code> with fixture that includes <code>analysis</code>. Verify matchScore progress bar, required keywords, missing keywords, and suggested summary are rendered.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Mock getJob. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">JobDetail shows Download CV and Download Cover Letter links when output present</span>
-            <div class="test-item-tags"><span class="tag type-ui">UI</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Mock <code>getJob()</code> with fixture including <code>output</code>. Confirm download links appear with correct <code>href</code> to <code>/api/cv/download/:id/cv</code> and <code>cover-letter</code>.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Mock getJob. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">CVEditor loads master CV data and handles save</span>
-            <div class="test-item-tags"><span class="tag type-ui">UI</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Mock <code>getMasterCV()</code> and <code>updateMasterCV()</code>. Render CVEditor, confirm fields are populated, change a value, submit, confirm <code>updateMasterCV</code> was called with correct payload.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Mock API functions. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">LiveFeed connects to SSE and displays incoming events</span>
-            <div class="test-item-tags"><span class="tag type-ui">UI</span><span class="tag priority-low">Low</span></div>
-          </div>
-          <div class="test-item-desc">Mock <code>EventSource</code> global. Simulate incoming SSE messages. Verify events appear in the feed with correct text and timestamp.</div>
-          <div class="test-item-detail"><strong>Mock needs:</strong> Mock EventSource. <strong>Can test without credentials:</strong> Yes.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. Unit Tests -->
-    <div class="test-area" id="ta-unit">
-      <div class="test-area-header" onclick="toggleArea('ta-unit')">
-        <span class="test-area-title">3. Service / Unit Testing</span>
-        <div class="test-area-meta">
-          <span class="tag type-unit">Unit</span>
-          <span class="tag priority-medium">Medium Priority</span>
-          <span class="chevron">▾</span>
-        </div>
-      </div>
-      <div class="test-area-body">
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">rateLimiter: checkDailyLimit() returns false when count ≥ max</span>
-            <div class="test-item-tags"><span class="tag type-unit">Unit</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Use ioredis-mock or real Redis. Seed 5 timestamps &lt;24h old. Call checkDailyLimit. Expect false. Also test pruning: seed 5 timestamps &gt;24h old → should prune to 0 → expect true.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">db/schema: isDuplicate() prevents re-insertion of same URL</span>
-            <div class="test-item-tags"><span class="tag type-unit">Unit</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Insert a job with a given URL, call isDuplicate with same URL → expect true. Call with different URL → expect false.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">db/schema: updateApplicationStatus appends to status_history</span>
-            <div class="test-item-tags"><span class="tag type-unit">Unit</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Insert job, call updateApplicationStatus twice, read back, confirm status_history is an array of 3 entries (initial + 2 updates) with correct timestamps.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">analyser: strips markdown fences from Claude response</span>
-            <div class="test-item-tags"><span class="tag type-unit">Unit</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Mock Claude SDK to return response wrapped in <code>```json\n...\n```</code>. Confirm analyser correctly strips fences and parses JSON without throwing.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">fingerprint: randomViewport returns one of the known sizes</span>
-            <div class="test-item-tags"><span class="tag type-unit">Unit</span><span class="tag priority-low">Low</span></div>
-          </div>
-          <div class="test-item-desc">Call randomViewport 50 times, confirm all results are from the expected pool of viewport sizes.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. End-to-End -->
-    <div class="test-area" id="ta-e2e">
-      <div class="test-area-header" onclick="toggleArea('ta-e2e')">
-        <span class="test-area-title">4. End-to-End Workflow Testing</span>
-        <div class="test-area-meta">
-          <span class="tag type-e2e">E2E</span>
-          <span class="tag priority-medium">Medium Priority</span>
-          <span class="chevron">▾</span>
-        </div>
-      </div>
-      <div class="test-area-body">
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px"><strong>Blocker:</strong> E2E tests require a running server, Redis, and either a real Claude API key or a stubbed HTTP server. Use <strong>Playwright Test</strong> (already installed).</p>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Full pipeline: insert job → analyse → generate → download</span>
-            <div class="test-item-tags"><span class="tag type-e2e">E2E</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Seed DB with a test job (skip scraping). Navigate Dashboard → click Analyse → wait for 'analysed' status → click Generate → wait for 'documents_ready' → click Download CV. Verify file downloads.</div>
-          <div class="test-item-detail"><strong>Blockers:</strong> Requires Claude API key or HTTP stub. <strong>Note:</strong> This will expose the analysis persistence bug — Generate will fail after status refresh.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">SSE stream: events visible in LiveFeed during status changes</span>
-            <div class="test-item-tags"><span class="tag type-e2e">E2E</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Open Dashboard (SSE connection established). Trigger a PATCH /api/jobs/:id/status via API. Confirm the event appears in LiveFeed within 2 seconds without page reload.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Apply dry-run: form filler runs without actual submission in dev mode</span>
-            <div class="test-item-tags"><span class="tag type-e2e">E2E</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">With NODE_ENV=development, trigger apply on a job with a real-looking job URL (can be a local mock server serving a form). Confirm status becomes 'applied', screenshot was created in logs/screenshots/, no real form submission occurred.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5. Manual QA -->
-    <div class="test-area" id="ta-manual">
-      <div class="test-area-header" onclick="toggleArea('ta-manual')">
-        <span class="test-area-title">5. Manual QA Scenarios</span>
-        <div class="test-area-meta">
-          <span class="tag type-manual">Manual</span>
-          <span class="tag priority-high">High Priority</span>
-          <span class="chevron">▾</span>
-        </div>
-      </div>
-      <div class="test-area-body">
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Indeed scraper returns real jobs for given keywords</span>
-            <div class="test-item-tags"><span class="tag type-manual">Manual</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">POST /api/jobs/discover with a real keyword (e.g., "TypeScript developer"). Verify jobs appear in DB with populated title, company, rawJD. Check for duplicate prevention if run twice.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Claude analysis returns valid JSON for a real JD</span>
-            <div class="test-item-tags"><span class="tag type-manual">Manual</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Use a real discovered job. POST /api/jobs/:id/analyse. Inspect response: all expected fields present (matchScore 0-100, requiredKeywords array, coverLetterDraft non-empty, language 'en' or 'de').</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Generated DOCX files are valid and readable</span>
-            <div class="test-item-tags"><span class="tag type-manual">Manual</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">After generate, download both DOCX files. Open in Word/LibreOffice. Check: required keywords bolded, suggestedSummary in CV, coverLetterDraft in cover letter, personal details from master CV.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Rate limiter enforces 5-per-day limit</span>
-            <div class="test-item-tags"><span class="tag type-manual">Manual</span><span class="tag priority-high">High</span></div>
-          </div>
-          <div class="test-item-desc">Manually insert 5 recent timestamps into Redis key <code>rate_limiter:applications</code>. Attempt POST /api/jobs/:id/apply. Confirm 429 response with retryAfter. Flush Redis and confirm apply works.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">CV Editor round-trip: edit → save → reload confirms persistence</span>
-            <div class="test-item-tags"><span class="tag type-manual">Manual</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">Open CV Editor, change a skill, save. Reload the page. Confirm the changed value persists. Check master-cv.json file was actually written.</div>
-        </div>
-
-        <div class="test-item">
-          <div class="test-item-header">
-            <span class="test-item-title">Stepstone scraper: API interception captures job data</span>
-            <div class="test-item-tags"><span class="tag type-manual">Manual</span><span class="tag priority-medium">Medium</span></div>
-          </div>
-          <div class="test-item-desc">POST discover with sources: ["stepstone"]. Observe server logs for intercepted API responses. Verify jobs have populated data. Note: fragile — Stepstone API structure may have changed.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Smoke Test -->
-    <div class="card" style="margin-top:24px">
-      <h3 style="margin-bottom:16px">🚦 Minimal Smoke Test Checklist</h3>
-      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px">Run this to confirm the system is up and the critical path works before deeper testing.</p>
-      <ul class="smoke-list">
-        <li>
-          <span class="smoke-num">1</span>
-          <div><strong>GET /health → 200</strong><div class="smoke-detail">Server is running, Express is wired, DB initialized.</div></div>
-        </li>
-        <li>
-          <span class="smoke-num">2</span>
-          <div><strong>GET /api/jobs → 200 (empty array OK)</strong><div class="smoke-detail">SQLite connection works, listApplications executes without error.</div></div>
-        </li>
-        <li>
-          <span class="smoke-num">3</span>
-          <div><strong>GET /api/cv → 200 with fullName field</strong><div class="smoke-detail">master-cv.json is readable and valid JSON.</div></div>
-        </li>
-        <li>
-          <span class="smoke-num">4</span>
-          <div><strong>Open dashboard in browser → jobs table renders</strong><div class="smoke-detail">Client starts, Vite dev server works, React Query fetches jobs.</div></div>
-        </li>
-        <li>
-          <span class="smoke-num">5</span>
-          <div><strong>Navigate to /cv → CV Editor fields populated</strong><div class="smoke-detail">GET /api/cv works, form binds correctly.</div></div>
-        </li>
-        <li>
-          <span class="smoke-num">6</span>
-          <div><strong>SSE: open /api/jobs/stream in browser → see connected:true event</strong><div class="smoke-detail">SSE endpoint works, EventEmitter is set up.</div></div>
-        </li>
-        <li>
-          <span class="smoke-num">7</span>
-          <div><strong>POST /api/jobs/discover with empty arrays → 400 with error</strong><div class="smoke-detail">Input validation is working.</div></div>
-        </li>
-        <li>
-          <span class="smoke-num">8</span>
-          <div><strong>POST /api/jobs/discover with ["typescript"] + ["indeed"] → some results</strong><div class="smoke-detail">Playwright launches, Indeed scraper returns jobs. (requires internet)</div></div>
-        </li>
-      </ul>
+# Open dashboard
+http://localhost:5173</pre>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- RISK AREAS                                     -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section" id="risk-areas">
-    <div class="section-header">
-      <span class="tag tag-section">Section C cont.</span>
-      <h2>High-Risk Areas</h2>
-      <p>Areas most likely to break or cause incorrect behavior in production.</p>
-    </div>
-
-    <div class="risk-grid">
-      <div class="risk-card risk-critical">
-        <span class="risk-label">Critical</span>
-        <h4>Analysis not persisted to DB</h4>
-        <p>After a server restart, any job in 'analysed' status cannot proceed to document generation. <code>app.analysis</code> is always undefined when retrieved from DB. The generate endpoint will always return 400 for previously-analysed jobs after a restart.</p>
-      </div>
-
-      <div class="risk-card risk-critical">
-        <span class="risk-label">Critical</span>
-        <h4>Rate limit in-handler check is broken</h4>
-        <p><code>checkDailyLimit()</code> is called without await on line 149. This means the secondary check inside the apply handler is effectively disabled. Only the middleware check (line 143) actually enforces the limit.</p>
-      </div>
-
-      <div class="risk-card risk-high">
-        <span class="risk-label">High</span>
-        <h4>Scraper DOM / API structure fragility</h4>
-        <p>Indeed uses CSS class selectors (<code>[class*="jobTitle"]</code>) that change frequently. Stepstone relies on intercepting an undocumented internal API. Either scraper could silently return 0 results after a platform update, with no alerting.</p>
-      </div>
-
-      <div class="risk-card risk-high">
-        <span class="risk-label">High</span>
-        <h4>Form filler regex matching is brittle</h4>
-        <p>The form auto-fill relies on regex pattern matching against field attributes. Non-standard field names (common in bespoke ATS systems) will be missed silently. There is no fallback for required fields that aren't filled.</p>
-      </div>
-
-      <div class="risk-card risk-medium">
-        <span class="risk-label">Medium</span>
-        <h4>POST /api/cv overwrites master-cv.json with no validation</h4>
-        <p>Any JSON body is accepted and written directly to master-cv.json. There is no Zod validation on the incoming CV data. Sending a partial or malformed body permanently corrupts the master CV.</p>
-      </div>
-
-      <div class="risk-card risk-medium">
-        <span class="risk-label">Medium</span>
-        <h4>Claude response JSON parsing can throw</h4>
-        <p>The analyser strips markdown fences then calls <code>JSON.parse()</code>. If Claude returns non-JSON (e.g., an error message, partial response), the parse throws and the job is marked as 'error'. No retry logic exists.</p>
-      </div>
-
-      <div class="risk-card risk-medium">
-        <span class="risk-label">Medium</span>
-        <h4>No input sanitization on rawJD stored in DB</h4>
-        <p>Raw HTML/text scraped from job listings is stored directly in SQLite and rendered in the frontend via <code>&lt;pre&gt;</code>. While not exploitable via SQLite (uses parameterized queries), XSS vectors should be verified if rawJD is ever rendered via dangerouslySetInnerHTML.</p>
-      </div>
-
-      <div class="risk-card risk-low">
-        <span class="risk-label">Low</span>
-        <h4>Playwright browser instance not cleaned up on error</h4>
-        <p>If scraping or form-filling throws mid-execution, the browser instance may not be closed. <code>closeBrowser()</code> exists but is only called on clean exit. Repeated errors could leak browser processes.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- TOOLING RECOMMENDATIONS                        -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section">
-    <div class="section-header">
-      <h2>Recommended Tooling</h2>
-      <p>Suggested tools for adding automated tests to this repo.</p>
-    </div>
-    <div class="tool-grid">
-      <div class="tool-card"><h4>Vitest</h4><p>Unit + API tests for server. Fast, TS-native, compatible with Jest API. Add to server/package.json.</p></div>
-      <div class="tool-card"><h4>Supertest</h4><p>HTTP assertion library for Express routes. Use with Vitest to test API endpoints in-process.</p></div>
-      <div class="tool-card"><h4>React Testing Library</h4><p>Component tests for Dashboard, JobDetail, CVEditor. Works with Vitest + jsdom.</p></div>
-      <div class="tool-card"><h4>MSW (Mock Service Worker)</h4><p>Intercept API calls in frontend tests. Better than vi.mock for testing React Query flows.</p></div>
-      <div class="tool-card"><h4>ioredis-mock</h4><p>In-memory Redis mock for testing rate limiter without a running Redis instance.</p></div>
-      <div class="tool-card"><h4>Playwright Test</h4><p>Already installed! Use for E2E. Write tests in server/e2e/ or root-level e2e/ directory.</p></div>
-      <div class="tool-card"><h4>better-sqlite3 in-memory</h4><p>Use <code>:memory:</code> path in test config for isolated, fast DB tests with no file I/O.</p></div>
-      <div class="tool-card"><h4>nock / msw (server)</h4><p>Stub the Anthropic API for server-side tests so Claude calls don't require real credentials.</p></div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- NEXT STEPS                                     -->
-  <!-- ═══════════════════════════════════════════════ -->
-  <div class="section" id="next-steps">
-    <div class="section-header">
-      <span class="tag tag-section">Section D</span>
-      <h2>Suggested Next Steps</h2>
-      <p>Ordered by impact. Fix bugs first, then add test infrastructure, then expand coverage.</p>
-    </div>
-    <ul class="steps-list">
-      <li>
-        <div>
-          <strong>Fix: Persist JDAnalysis to SQLite</strong>
-          <span>Add an <code>analysis</code> TEXT column to the applications table. JSON-stringify before insert, JSON-parse on read. This unblocks the generate endpoint after server restarts and is the single most impactful fix.</span>
-        </div>
-      </li>
-      <li>
-        <div>
-          <strong>Fix: Add <code>await</code> to <code>checkDailyLimit()</code></strong>
-          <span>In <code>server/src/routes/jobs.ts:149</code>, change <code>if (!checkDailyLimit())</code> to <code>if (!await checkDailyLimit())</code>. Low effort, fixes a real correctness bug.</span>
-        </div>
-      </li>
-      <li>
-        <div>
-          <strong>Fix: Add Zod validation to POST /api/cv</strong>
-          <span>Validate the incoming MasterCV shape before writing to disk. Prevents silent data corruption from a bad POST body.</span>
-        </div>
-      </li>
-      <li>
-        <div>
-          <strong>Add Vitest + Supertest to server</strong>
-          <span>Set up test infrastructure with a <code>:memory:</code> SQLite DB and ioredis-mock. Write the smoke test checklist as automated tests first (8 tests covers the critical path).</span>
-        </div>
-      </li>
-      <li>
-        <div>
-          <strong>Add a "Discover" UI to the Dashboard</strong>
-          <span><code>discoverJobs()</code> exists in <code>api/client.ts</code> but is never called from any UI component. Add a keyword input + source checkboxes + Discover button to Dashboard.</span>
-        </div>
-      </li>
-      <li>
-        <div>
-          <strong>Add scraper health monitoring</strong>
-          <span>Log a warning when a scraper run returns 0 results. Add a metric/counter so you can detect when Indeed/Stepstone DOM changes break the scrapers silently.</span>
-        </div>
-      </li>
-      <li>
-        <div>
-          <strong>Remove unused dependencies</strong>
-          <span>Remove <code>pdf-lib</code> and <code>bull</code> from server/package.json. Remove deprecated <code>server/src/services/ai.ts</code>. Reduces bundle size and confusion.</span>
-        </div>
-      </li>
-    </ul>
-  </div>
-
-</div><!-- /container -->
+</div>
 
 <footer>
-  PipeJob — Agent Workflow & Test Plan &nbsp;·&nbsp; Generated 2026-03-29 &nbsp;·&nbsp; Read directly from source code
+  PipeJob Phase 2 — Updated 2026-03-29 &nbsp;·&nbsp; All information derived directly from source code
 </footer>
 
-<script>
-  function toggleArea(id) {
-    const el = document.getElementById(id);
-    el.classList.toggle('collapsed');
-  }
-</script>
 </body>
 </html>
