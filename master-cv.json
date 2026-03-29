@@ -1,0 +1,78 @@
+{
+  "fullName": "Alex Müller",
+  "email": "alex.mueller@gmail.com",
+  "phone": "+49 911 123 4567",
+  "linkedin": "https://linkedin.com/in/alexmueller-dev",
+  "github": "https://github.com/alexmueller",
+  "location": "Nürnberg, Bayern",
+  "summary": "Experienced software engineer with 8+ years building scalable backend systems and cloud-native applications. Passionate about clean architecture, developer tooling, and automation. Fluent in German and English.",
+  "skills": [
+    "TypeScript",
+    "Node.js",
+    "Python",
+    "Go",
+    "React",
+    "PostgreSQL",
+    "Redis",
+    "Docker",
+    "Kubernetes",
+    "AWS",
+    "GCP",
+    "Terraform",
+    "CI/CD",
+    "REST APIs",
+    "GraphQL",
+    "Microservices",
+    "Agile/Scrum"
+  ],
+  "experience": [
+    {
+      "company": "Siemens AG",
+      "role": "Senior Software Engineer",
+      "startDate": "2021-03",
+      "bullets": [
+        "Architected and delivered a real-time IoT data pipeline processing 500k events/day using Node.js and Kafka.",
+        "Led migration of 12 legacy Java services to TypeScript microservices, reducing p99 latency by 40%.",
+        "Mentored 4 junior engineers; introduced trunk-based development and automated release workflows.",
+        "Collaborated with product and UX to redesign the internal developer portal, cutting onboarding time by 60%."
+      ]
+    },
+    {
+      "company": "MaibornWolff GmbH",
+      "role": "Software Engineer",
+      "startDate": "2018-09",
+      "endDate": "2021-02",
+      "bullets": [
+        "Developed REST and GraphQL APIs for a SaaS insurance platform serving 200k users (Node.js, PostgreSQL).",
+        "Built automated testing infrastructure (Jest, Playwright) achieving 85% code coverage.",
+        "Deployed containerised services on AWS ECS with Terraform; reduced infrastructure costs by 25%.",
+        "Integrated third-party payment and KYC providers (Stripe, IDnow) with full audit-trail logging."
+      ]
+    },
+    {
+      "company": "Freelance",
+      "role": "Full-Stack Developer",
+      "startDate": "2016-06",
+      "endDate": "2018-08",
+      "bullets": [
+        "Delivered 10+ custom web applications for SMEs in the Bavarian region using React and Express.",
+        "Set up CI/CD pipelines on GitHub Actions and automated deployments to DigitalOcean VPS.",
+        "Provided ongoing maintenance, performance optimisation, and security hardening."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Friedrich-Alexander-Universität Erlangen-Nürnberg",
+      "degree": "Bachelor of Science",
+      "field": "Computer Science",
+      "startDate": "2012-10",
+      "endDate": "2016-05",
+      "gpa": "1.8"
+    }
+  ],
+  "languages": [
+    { "language": "German", "level": "Native" },
+    { "language": "English", "level": "C1 — Professional Working Proficiency" }
+  ]
+}

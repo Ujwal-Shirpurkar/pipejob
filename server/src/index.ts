@@ -1,14 +1,37 @@
-import express from "express";
-import cors from "cors";
-import "dotenv/config";
-import jobsRoute from "./routes/jobs";
+import express from 'express';
+import cors from 'cors';
+import type { Request, Response, NextFunction } from 'express';
+import { initDb } from './db/schema';
+import { config, PORT } from './config';
+import logger from './logger';
+import jobsRouter from './routes/jobs';
+import cvRouter from './routes/cv';
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-app.use("/jobs", jobsRoute);
+// Initialise database
+initDb(config.dbPath);
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+// Routes
+app.use('/api/jobs', jobsRouter);
+app.use('/api/cv', cvRouter);
+
+// Health check
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', ts: new Date().toISOString() });
+});
+
+// Global error handler
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ action: 'unhandled_error', error: err.message, stack: err.stack });
+  res.status(500).json({ error: err.message });
+});
+
+app.listen(PORT, () => {
+  logger.info({ action: 'server_start', port: PORT });
+  console.log(`Server running on http://localhost:${PORT}`);
 });

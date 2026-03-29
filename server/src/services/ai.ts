@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.CLAUDE_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 export async function analyzeJob(job: any) {
@@ -28,7 +28,8 @@ ${job.description?.slice(0, 200)}
     });
 
     const textContent = res.content?.[0];
-    const text = textContent && textContent.type === "text" ? textContent.text : "";
+    const text =
+      textContent && textContent.type === "text" ? textContent.text : "";
 
     console.log("AI RAW:", text);
 
