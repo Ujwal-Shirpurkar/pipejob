@@ -11,7 +11,6 @@ import {
 } from '../db/schema';
 import { scrapeJobs } from '../services/scraper/index';
 import { analyseJD } from '../services/documents/analyser';
-import { generateDocuments } from '../services/documents/generator';
 import { submitApplication } from '../services/submission/formFiller';
 import { applicationRateLimiter, checkDailyLimit, recordApplication } from '../middleware/rateLimiter';
 import { config } from '../config';
@@ -124,6 +123,7 @@ router.post('/:id/generate', async (req: Request<IdParams>, res: Response) => {
 
   try {
     const masterCV = loadMasterCV();
+    const { generateDocuments } = await import('../services/documents/generator');
     const output = await generateDocuments(masterCV, app.analysis, config.outputDir);
     updateApplicationStatus(app.id, 'documents_ready');
 

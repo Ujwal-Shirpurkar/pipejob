@@ -15,16 +15,60 @@ PipeJob is an automated job-application agent that discovers job listings from S
 
 ```bash
 # 1. Copy env config
-cp .env.example server/.env
-# Fill in ANTHROPIC_API_KEY and adjust paths as needed
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 
-# 2. Install server deps + Playwright browsers
+# 2. Fill in the required values
+# - server/.env: ANTHROPIC_API_KEY
+# - master-cv.json: replace the sample profile with your own CV data
+# - client/.env is optional for local dev; keep the default unless your API runs elsewhere
+
+# 3. Install server deps + Playwright browsers
 cd server && npm install
 npx playwright install chromium
 
-# 3. Install client deps
+# 4. Install client deps
 cd ../client && npm install
 ```
+
+## Environment Variables
+
+### Server
+
+`server/.env` is the runtime config file used by the API server.
+
+- Required
+  - `ANTHROPIC_API_KEY`
+- Usually keep defaults
+  - `MASTER_CV_PATH`
+  - `OUTPUT_DIR`
+  - `LOG_DIR`
+  - `DB_PATH`
+  - `SCRAPE_DELAY_MIN_MS`
+  - `SCRAPE_DELAY_MAX_MS`
+  - `MAX_JOBS_PER_RUN`
+  - `MAX_APPLICATIONS_PER_DAY`
+  - `PORT`
+  - `NODE_ENV`
+- Optional
+  - `TELEGRAM_TOKEN`
+  - `TELEGRAM_CHAT_ID`
+  - `GOOGLE_SHEET_ID`
+
+### Client
+
+`client/.env` is optional in local development.
+
+- Optional
+  - `VITE_API_URL`
+
+If `VITE_API_URL` is unset, the client defaults to `http://localhost:3001`.
+
+### .env.example vs .env
+
+- `.env.example` is a safe, committed template that shows which keys exist.
+- `.env` contains your real local values and should stay uncommitted.
+- In this repo, the important runtime file is `server/.env`.
 
 ---
 
