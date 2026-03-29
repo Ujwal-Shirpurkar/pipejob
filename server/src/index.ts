@@ -4,6 +4,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { initDb } from './db/schema';
 import { config, PORT } from './config';
 import logger from './logger';
+import { connectRedis } from './redis';
 import jobsRouter from './routes/jobs';
 import cvRouter from './routes/cv';
 
@@ -31,7 +32,14 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: err.message });
 });
 
-app.listen(PORT, () => {
-  logger.info({ action: 'server_start', port: PORT });
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+connectRedis()
+  .then(() => {
+    app.listen(PORT, () => {
+      logger.info({ action: 'server_start', port: PORT });
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    logger.error({ action: 'redis_connect_failed', error: err.message });
+    process.exit(1);
+  });
