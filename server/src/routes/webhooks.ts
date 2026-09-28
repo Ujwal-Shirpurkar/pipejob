@@ -1,61 +1,36 @@
 /**
- * n8n Integration Webhook Routes
+ * n8n / automation integration.
  *
- * These endpoints serve as integration points for n8n workflows.
- * n8n can call these to trigger actions, poll state, or receive events.
+ * Lets an external workflow engine schedule scans, trigger agent runs, poll the review
+ * queue and push status changes (e.g. an interview invite detected in the inbox).
+ * There is deliberately no endpoint that submits applications — that stays with the human.
  *
- * Authentication: All webhook endpoints require the X-Webhook-Secret header
- * matching the WEBHOOK_SECRET env var (set in .env).
- *
- * n8n Integration Architecture:
- * ┌─────────────────────────────────────────────────────────┐
- * │  n8n Workflow                                           │
- * │                                                         │
- * │  [Schedule Trigger] ─► POST /api/webhooks/n8n/discover │
- * │                              │                          │
- * │                         PipeJob scrapes                 │
- * │                              │                          │
- * │  [Polling] ◄── GET /api/webhooks/n8n/pending-analysis  │
- * │                              │                          │
- * │  [HTTP Request] ─► POST /api/jobs/:id/analyse           │
- * │  [HTTP Request] ─► POST /api/jobs/:id/generate          │
- * │                              │                          │
- * │  [Human Review] ─► review in PipeJob dashboard          │
- * │                              │                          │
- * │  [Conditional] ─► POST /api/webhooks/n8n/approve-apply  │
- * │                         (human approved)                │
- * │                              │                          │
- * │  PipeJob applies ◄── POST /api/jobs/:id/apply           │
- * │                              │                          │
- * │  [Status Push] ◄── GET /api/webhooks/n8n/status-summary │
- * └─────────────────────────────────────────────────────────┘
+ * Auth: every request must send `X-Webhook-Secret: <WEBHOOK_SECRET>`.
  */
 
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { listApplications, getApplication, updateApplicationStatus } from '../db/schema';
-import { scrapeJobs } from '../services/scraper/index';
-import { insertApplication } from '../db/schema';
-import { emitJobEvent } from '../events';
+import { timingSafeEqual } from 'crypto';
+import { z } from 'zod';
 import { config } from '../config';
-import logger from '../logger';
+import { listApplications } from '../db/applications';
+import { isRunActive, startAgentRun } from '../agent/orchestrator';
+import { PipelineError, setStatus } from '../services/pipeline';
+import { searchJobs } from '../services/sources/search';
+import { loadPreferences } from '../profile';
+import type { JobStatus } from '../types/index';
 
 const router = Router();
 
-// ── Auth middleware ────────────────────────────────────────────────────────────
 function webhookAuth(req: Request, res: Response, next: NextFunction): void {
-  const secret = process.env.WEBHOOK_SECRET;
+  const secret = config.webhookSecret;
   if (!secret) {
-    // No secret configured — allow in development, block in production
-    if (process.env.NODE_ENV === 'production') {
-      res.status(503).json({ error: 'Webhook integration not configured (WEBHOOK_SECRET not set)' });
-      return;
-    }
-    next();
+    res.status(503).json({ error: 'Webhook integration disabled: set WEBHOOK_SECRET to enable it.' });
     return;
   }
-  const provided = req.headers['x-webhook-secret'];
-  if (provided !== secret) {
+  const provided = Buffer.from(String(req.headers['x-webhook-secret'] ?? ''));
+  const expected = Buffer.from(secret);
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
     res.status(401).json({ error: 'Invalid webhook secret' });
     return;
   }
@@ -64,180 +39,64 @@ function webhookAuth(req: Request, res: Response, next: NextFunction): void {
 
 router.use(webhookAuth);
 
-/**
- * POST /api/webhooks/n8n/discover
- * Trigger a job discovery run from n8n.
- *
- * Body: { keywords: string[], sources?: string[], location?: string }
- * Response: { triggered: true, discovered: number, ids: string[] }
- *
- * n8n node type: HTTP Request
- * Suggested n8n trigger: Schedule (e.g. every 6 hours)
- */
-router.post('/n8n/discover', async (req: Request, res: Response) => {
-  const { keywords = [], sources = ['indeed'], location } = req.body as {
-    keywords?: string[];
-    sources?: string[];
-    location?: string;
-  };
-
-  if (!Array.isArray(keywords) || keywords.length === 0) {
-    res.status(400).json({ error: 'keywords array is required' });
-    return;
-  }
-
-  logger.info({ action: 'webhook_discover', keywords, sources, location });
-
-  try {
-    const jobs = await scrapeJobs(sources, keywords, location);
-    const ids: string[] = [];
-    for (const job of jobs) {
-      insertApplication(job);
-      ids.push(job.id);
-      emitJobEvent(job.id, 'discovered');
-    }
-    res.json({ triggered: true, discovered: ids.length, ids });
-  } catch (err) {
-    logger.error({ action: 'webhook_discover', error: String(err) });
-    res.status(500).json({ error: String(err) });
-  }
+// POST /api/webhooks/n8n/search — scheduled portal scan (no LLM cost)
+router.post('/n8n/search', async (req: Request, res: Response) => {
+  const prefs = loadPreferences();
+  const body = z
+    .object({ keywords: z.array(z.string()).optional(), location: z.string().optional() })
+    .parse(req.body ?? {});
+  const report = await searchJobs({
+    keywords: body.keywords?.length ? body.keywords : prefs.search.keywords,
+    location: body.location ?? prefs.search.location,
+  });
+  res.json({ scanned: report.scanned, newJobs: report.results.filter((r) => r.isNew).map((r) => ({ id: r.job.id, title: r.job.title, company: r.job.company })) });
 });
 
-/**
- * GET /api/webhooks/n8n/pending-analysis
- * Returns jobs in 'discovered' status that n8n should trigger analysis for.
- *
- * n8n node type: HTTP Request (poll)
- * Suggested n8n trigger: After discover completes, or schedule every 30min
- * Response: { jobs: { id, title, company, source }[] }
- */
-router.get('/n8n/pending-analysis', (req: Request, res: Response) => {
-  const limit = req.query.limit ? Number(req.query.limit) : 10;
-  const jobs = listApplications({ status: 'discovered', limit });
+// POST /api/webhooks/n8n/agent-run — start the agent with a goal (defaults to the autopilot goal)
+router.post('/n8n/agent-run', (req: Request, res: Response) => {
+  const { goal } = z.object({ goal: z.string().optional() }).parse(req.body ?? {});
+  if (isRunActive()) throw new PipelineError('An agent run is already in progress', 409);
+  const run = startAgentRun(goal || loadPreferences().autopilotGoal, 'webhook');
+  res.status(202).json({ runId: run.id, dashboardUrl: `${config.clientUrl}/agent/${run.id}` });
+});
+
+// GET /api/webhooks/n8n/review-queue — jobs the agent shortlisted for the human
+router.get('/n8n/review-queue', (_req: Request, res: Response) => {
   res.json({
-    jobs: jobs.map((j) => ({
+    jobs: listApplications({ reviewRequested: true, sort: 'score' }).map((j) => ({
       id: j.id,
       title: j.job.title,
       company: j.job.company,
-      source: j.job.source,
-      discoveredAt: j.job.discoveredAt,
-      analyseUrl: `${req.protocol}://${req.get('host')}/api/jobs/${j.id}/analyse`,
+      grade: j.grade,
+      note: j.reviewNote,
+      dashboardUrl: `${config.clientUrl}/jobs/${j.id}`,
     })),
   });
 });
 
-/**
- * GET /api/webhooks/n8n/pending-review
- * Returns jobs in 'documents_ready' status awaiting human review before applying.
- * This is the human-in-the-loop checkpoint.
- *
- * n8n node type: HTTP Request
- * Suggested usage: n8n polls this, then pauses with a "Wait" node for human approval.
- */
-router.get('/n8n/pending-review', (_req: Request, res: Response) => {
-  const jobs = listApplications({ status: 'documents_ready' });
-  res.json({
-    jobs: jobs.map((j) => ({
-      id: j.id,
-      title: j.job.title,
-      company: j.job.company,
-      matchScore: j.analysis?.matchScore,
-      dashboardUrl: `http://localhost:5173/jobs/${j.id}`,
-      applyUrl: `http://localhost:3001/api/jobs/${j.id}/apply`,
-    })),
-  });
-});
-
-/**
- * POST /api/webhooks/n8n/approve-apply
- * Called by n8n after human reviews and approves a job for application.
- *
- * Body: { jobId: string, approvedBy?: string }
- * This triggers the apply endpoint internally.
- *
- * n8n node type: HTTP Request (after human approval step)
- */
-router.post('/n8n/approve-apply', async (req: Request, res: Response) => {
-  const { jobId, approvedBy } = req.body as { jobId?: string; approvedBy?: string };
-  if (!jobId) {
-    res.status(400).json({ error: 'jobId is required' });
-    return;
-  }
-
-  const app = getApplication(jobId);
-  if (!app) {
-    res.status(404).json({ error: 'Job not found' });
-    return;
-  }
-  if (app.job.status !== 'documents_ready') {
-    res.status(409).json({ error: `Job is in status '${app.job.status}', expected 'documents_ready'` });
-    return;
-  }
-
-  logger.info({ action: 'webhook_approve_apply', jobId, approvedBy });
-
-  // Delegate to internal apply by making a sub-request via fetch
-  try {
-    const applyRes = await fetch(`http://localhost:${config.rateLimits.maxApplicationsPerDay ? 3001 : 3001}/api/jobs/${jobId}/apply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const result = await applyRes.json() as unknown;
-    res.json({ approved: true, jobId, applyResult: result });
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
-  }
-});
-
-/**
- * GET /api/webhooks/n8n/status-summary
- * Returns a high-level summary for n8n dashboards or notification nodes.
- *
- * n8n node type: HTTP Request
- * Suggested usage: Trigger Slack/email notification with summary
- */
+// GET /api/webhooks/n8n/status-summary — digest for Slack / e-mail nodes
 router.get('/n8n/status-summary', (_req: Request, res: Response) => {
-  const all = listApplications({});
-  const summary = {
+  const all = listApplications();
+  const byStatus: Record<string, number> = {};
+  for (const j of all) byStatus[j.job.status] = (byStatus[j.job.status] ?? 0) + 1;
+  res.json({
     total: all.length,
-    byStatus: {} as Record<string, number>,
+    byStatus,
+    reviewQueue: all.filter((j) => j.reviewRequested).length,
     recentApplied: all
-      .filter((j) => j.job.status === 'applied' && j.appliedAt)
+      .filter((j) => j.appliedAt)
       .sort((a, b) => (b.appliedAt ?? '').localeCompare(a.appliedAt ?? ''))
       .slice(0, 5)
       .map((j) => ({ id: j.id, title: j.job.title, company: j.job.company, appliedAt: j.appliedAt })),
-  };
-
-  for (const job of all) {
-    const s = job.job.status;
-    summary.byStatus[s] = (summary.byStatus[s] ?? 0) + 1;
-  }
-
-  res.json(summary);
+  });
 });
 
-/**
- * POST /api/webhooks/n8n/status-update
- * Allows n8n to push a status update (e.g. when it detects an email reply about interview).
- *
- * Body: { jobId: string, status: JobStatus, note?: string }
- */
+// POST /api/webhooks/n8n/status-update — e.g. an interview invitation or rejection e-mail arrived
 router.post('/n8n/status-update', (req: Request, res: Response) => {
-  const { jobId, status, note } = req.body as { jobId?: string; status?: string; note?: string };
-  if (!jobId || !status) {
-    res.status(400).json({ error: 'jobId and status are required' });
-    return;
-  }
-
-  const app = getApplication(jobId);
-  if (!app) {
-    res.status(404).json({ error: 'Job not found' });
-    return;
-  }
-
-  updateApplicationStatus(jobId, status as import('../types/index').JobStatus, note);
-  emitJobEvent(jobId, status, note);
-  logger.info({ action: 'webhook_status_update', jobId, status, note });
+  const { jobId, status, note } = z
+    .object({ jobId: z.string(), status: z.enum(['interview', 'offer', 'rejected']), note: z.string().optional() })
+    .parse(req.body);
+  setStatus(jobId, status as JobStatus, note, 'system');
   res.json({ updated: true, jobId, status });
 });
 

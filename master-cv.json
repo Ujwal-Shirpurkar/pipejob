@@ -1,78 +1,96 @@
 {
   "fullName": "Alex Müller",
-  "email": "headhunters0618@gmail.com",
-  "phone": "+49 911 123 4567",
-  "linkedin": "https://linkedin.com/in/alexmueller-dev",
-  "github": "https://github.com/alexmueller",
-  "location": "Nürnberg, Bayern",
-  "summary": "Experienced software engineer with 8+ years building scalable backend systems and cloud-native applications. Passionate about clean architecture, developer tooling, and automation. Fluent in German and English.",
+  "headline": "M.Sc. Artificial Intelligence Student · LLM & Agentic Systems",
+  "email": "alex.mueller@example.com",
+  "phone": "+49 911 000 0000",
+  "linkedin": "https://linkedin.com/in/alex-mueller-example",
+  "github": "https://github.com/alex-mueller-example",
+  "location": "Nuremberg, Germany",
+  "summary": "Master's student in Artificial Intelligence with hands-on experience building LLM-powered applications and tool-using agents in TypeScript and Python. Enjoys turning fuzzy workflows into reliable, observable automations with humans in the loop.",
   "skills": [
+    "Python",
     "TypeScript",
     "Node.js",
-    "Python",
-    "Go",
     "React",
+    "LLM APIs (Claude, tool use, structured outputs)",
+    "Agentic workflows",
+    "Prompt engineering",
+    "Retrieval-Augmented Generation",
+    "PyTorch",
+    "scikit-learn",
+    "SQL",
+    "SQLite",
     "PostgreSQL",
-    "Redis",
     "Docker",
-    "Kubernetes",
-    "AWS",
-    "GCP",
-    "Terraform",
-    "CI/CD",
+    "Git",
     "REST APIs",
-    "GraphQL",
-    "Microservices",
-    "Agile/Scrum"
+    "n8n",
+    "Playwright",
+    "Linux"
   ],
   "experience": [
     {
-      "company": "Siemens AG",
-      "role": "Senior Software Engineer",
-      "startDate": "2021-03",
+      "company": "Datalytics Solutions GmbH",
+      "role": "Working Student – Software Engineering",
+      "location": "Nuremberg",
+      "startDate": "2024-10",
       "bullets": [
-        "Architected and delivered a real-time IoT data pipeline processing 500k events/day using Node.js and Kafka.",
-        "Led migration of 12 legacy Java services to TypeScript microservices, reducing p99 latency by 40%.",
-        "Mentored 4 junior engineers; introduced trunk-based development and automated release workflows.",
-        "Collaborated with product and UX to redesign the internal developer portal, cutting onboarding time by 60%."
+        "Built an internal document Q&A assistant using retrieval-augmented generation over 2,000+ support articles, used daily by the support team.",
+        "Automated weekly reporting with Python and n8n workflows, saving the operations team about 4 hours per week.",
+        "Developed REST endpoints and React views for a customer analytics dashboard in a team of five engineers.",
+        "Wrote integration tests and added structured logging, reducing time to diagnose production issues."
       ]
     },
     {
-      "company": "MaibornWolff GmbH",
-      "role": "Software Engineer",
-      "startDate": "2018-09",
-      "endDate": "2021-02",
+      "company": "Friedrich-Alexander-Universität Erlangen-Nürnberg",
+      "role": "Student Research Assistant (HiWi) – Machine Learning Lab",
+      "location": "Erlangen",
+      "startDate": "2023-11",
+      "endDate": "2024-09",
       "bullets": [
-        "Developed REST and GraphQL APIs for a SaaS insurance platform serving 200k users (Node.js, PostgreSQL).",
-        "Built automated testing infrastructure (Jest, Playwright) achieving 85% code coverage.",
-        "Deployed containerised services on AWS ECS with Terraform; reduced infrastructure costs by 25%.",
-        "Integrated third-party payment and KYC providers (Stripe, IDnow) with full audit-trail logging."
+        "Implemented and benchmarked text-classification baselines in PyTorch and scikit-learn for a research project.",
+        "Built data-cleaning pipelines for a corpus of 50k German and English documents.",
+        "Supported tutorials for the 'Introduction to Machine Learning' course (≈120 students)."
       ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "PipeJob – Agentic Career Assistant",
+      "description": "Tool-using Claude agent that searches official job-board APIs, scores roles on eight evidence-backed dimensions and prepares grounded, tailored CVs — with a human approving every application.",
+      "tech": ["TypeScript", "Node.js", "React", "Claude API", "SQLite", "Playwright"],
+      "url": "https://github.com/Prof-Larry/pipejob"
     },
     {
-      "company": "Freelance",
-      "role": "Full-Stack Developer",
-      "startDate": "2016-06",
-      "endDate": "2018-08",
-      "bullets": [
-        "Delivered 10+ custom web applications for SMEs in the Bavarian region using React and Express.",
-        "Set up CI/CD pipelines on GitHub Actions and automated deployments to DigitalOcean VPS.",
-        "Provided ongoing maintenance, performance optimisation, and security hardening."
-      ]
+      "name": "Lecture-Notes RAG Tutor",
+      "description": "Retrieval-augmented study assistant over course PDFs with citation-grounded answers and an evaluation set of 100 questions.",
+      "tech": ["Python", "Embeddings", "PostgreSQL", "FastAPI"]
+    },
+    {
+      "name": "Browser Research Agent",
+      "description": "Small agent that plans multi-step web research tasks and summarises findings with sources, built to learn agent loop design and failure handling.",
+      "tech": ["Python", "LLM tool use", "Playwright"]
     }
   ],
   "education": [
     {
       "institution": "Friedrich-Alexander-Universität Erlangen-Nürnberg",
+      "degree": "Master of Science",
+      "field": "Artificial Intelligence",
+      "startDate": "2024-10"
+    },
+    {
+      "institution": "Friedrich-Alexander-Universität Erlangen-Nürnberg",
       "degree": "Bachelor of Science",
       "field": "Computer Science",
-      "startDate": "2012-10",
-      "endDate": "2016-05",
-      "gpa": "1.8"
+      "startDate": "2021-10",
+      "endDate": "2024-09",
+      "gpa": "1.9"
     }
   ],
   "languages": [
     { "language": "German", "level": "Native" },
-    { "language": "English", "level": "C1 — Professional Working Proficiency" }
-  ]
+    { "language": "English", "level": "C1" }
+  ],
+  "certifications": []
 }

@@ -11,23 +11,16 @@ dist/
 dist-ssr/
 build/
 
-# macOS
-.DS_Store
-
-# Logs
+# Local data: database, generated documents, logs
+server/data/
+server/outputs/
+server/outputs-*/
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# Editor
+# OS / editor
+.DS_Store
 .vscode/*
 !.vscode/extensions.json
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 *.sw?

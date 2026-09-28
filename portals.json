@@ -1,0 +1,27 @@
+{
+  "$comment": "Companies scanned via their official public job-board APIs. ats: greenhouse | lever | ashby; slug is the board name in the careers URL (e.g. jobs.ashbyhq.com/<slug>).",
+  "companies": [
+    { "name": "n8n", "ats": "ashby", "slug": "n8n", "tags": ["agentic", "berlin"] },
+    { "name": "DeepL", "ats": "ashby", "slug": "deepl", "tags": ["ai", "cologne"] },
+    { "name": "Parloa", "ats": "ashby", "slug": "parloa", "tags": ["agentic", "berlin", "munich"] },
+    { "name": "Black Forest Labs", "ats": "ashby", "slug": "black-forest-labs", "tags": ["ai", "freiburg"] },
+    { "name": "Langdock", "ats": "ashby", "slug": "langdock", "tags": ["agentic", "berlin"] },
+    { "name": "Tacto", "ats": "ashby", "slug": "tacto", "tags": ["ai", "munich"] },
+    { "name": "Buena", "ats": "ashby", "slug": "buena", "tags": ["ai", "berlin"] },
+    { "name": "Knowunity", "ats": "ashby", "slug": "knowunity", "tags": ["ai", "berlin"] },
+    { "name": "ElevenLabs", "ats": "ashby", "slug": "elevenlabs", "tags": ["ai", "remote"] },
+    { "name": "Synthesia", "ats": "ashby", "slug": "synthesia", "tags": ["ai"] },
+    { "name": "Perplexity", "ats": "ashby", "slug": "perplexity", "tags": ["ai"] },
+    { "name": "Anthropic", "ats": "greenhouse", "slug": "anthropic", "tags": ["ai"] },
+    { "name": "Celonis", "ats": "greenhouse", "slug": "celonis", "tags": ["ai", "munich"] },
+    { "name": "Helsing", "ats": "greenhouse", "slug": "helsing", "tags": ["ai", "munich", "berlin"] },
+    { "name": "N26", "ats": "greenhouse", "slug": "n26", "tags": ["fintech", "berlin"] },
+    { "name": "GetYourGuide", "ats": "greenhouse", "slug": "getyourguide", "tags": ["berlin"] },
+    { "name": "Contentful", "ats": "greenhouse", "slug": "contentful", "tags": ["berlin"] },
+    { "name": "SumUp", "ats": "greenhouse", "slug": "sumup", "tags": ["fintech", "berlin"] },
+    { "name": "HelloFresh", "ats": "greenhouse", "slug": "hellofresh", "tags": ["berlin"] },
+    { "name": "Raisin", "ats": "greenhouse", "slug": "raisin", "tags": ["fintech", "berlin"] },
+    { "name": "FlixBus", "ats": "greenhouse", "slug": "flix", "tags": ["munich"] },
+    { "name": "Trivago", "ats": "greenhouse", "slug": "trivago", "tags": ["düsseldorf"] }
+  ]
+}

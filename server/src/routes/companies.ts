@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { listCompanies, upsertCompany } from '../db/schema';
+import { randomUUID } from 'crypto';
+import { listCompanies, upsertCompany } from '../db/companies';
 
 const router = Router();
 
@@ -17,14 +18,13 @@ router.get('/', (req: Request, res: Response) => {
 
 // POST /api/companies — add or update a company
 router.post('/', (req: Request, res: Response) => {
-  const { v4: uuidv4 } = require('uuid') as { v4: () => string };
   const body = req.body as Record<string, unknown>;
   if (!body.name) {
     res.status(400).json({ error: 'name is required' });
     return;
   }
   upsertCompany({
-    id: (body.id as string) ?? uuidv4(),
+    id: (body.id as string) ?? randomUUID(),
     name: body.name as string,
     name_normalized: (body.name as string).toLowerCase().trim(),
     website: body.website as string | undefined,

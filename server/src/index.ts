@@ -1,54 +1,32 @@
-import express from 'express';
-import cors from 'cors';
-import type { Request, Response, NextFunction } from 'express';
-import { initDb } from './db/schema';
-import { seedCompaniesIfEmpty } from './db/schema';
+import { config, isLlmConfigured, PORT } from './config';
+import { initDb } from './db/database';
+import { seedCompaniesIfEmpty } from './db/companies';
 import { GERMAN_TECH_COMPANIES } from './db/companySeed';
-import { config, PORT } from './config';
+import { failOrphanedRuns } from './db/agentRuns';
+import { createApp } from './app';
+import { startScheduler } from './scheduler';
+import { closePdfBrowser } from './services/tailoring/pdf';
 import logger from './logger';
-import { connectRedis } from './redis';
-import jobsRouter from './routes/jobs';
-import cvRouter from './routes/cv';
-import companiesRouter from './routes/companies';
-import webhooksRouter from './routes/webhooks';
 
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-// Initialise database
 initDb(config.dbPath);
-
-// Seed company reference data on first run
 seedCompaniesIfEmpty(GERMAN_TECH_COMPANIES);
+const orphaned = failOrphanedRuns();
+if (orphaned) logger.warn({ action: 'orphaned_runs', count: orphaned });
 
-// Routes
-app.use('/api/jobs', jobsRouter);
-app.use('/api/cv', cvRouter);
-app.use('/api/companies', companiesRouter);
-app.use('/api/webhooks', webhooksRouter);
-
-// Health check
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', ts: new Date().toISOString() });
+const server = createApp().listen(PORT, () => {
+  logger.info({ action: 'server_start', port: PORT, model: config.model, llmConfigured: isLlmConfigured() });
+  console.log(`PipeJob API running on http://localhost:${PORT}`);
+  if (!isLlmConfigured()) {
+    console.warn('ANTHROPIC_API_KEY is not set — tracking and portal search work, AI features are disabled.');
+  }
 });
 
-// Global error handler
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  logger.error({ action: 'unhandled_error', error: err.message, stack: err.stack });
-  res.status(500).json({ error: err.message });
-});
+startScheduler();
 
-connectRedis()
-  .then(() => {
-    app.listen(PORT, () => {
-      logger.info({ action: 'server_start', port: PORT });
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    logger.error({ action: 'redis_connect_failed', error: err.message });
-    process.exit(1);
-  });
+async function shutdown() {
+  server.close();
+  await closePdfBrowser();
+  process.exit(0);
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

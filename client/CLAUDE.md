@@ -1,40 +1,34 @@
 # PipeJob Client
 
-React + TypeScript frontend for the PipeJob job listing platform.
-
-## Tech Stack
-
-- **React 19** with TypeScript
-- **Vite** (build tool, with Oxc-based React plugin)
-- **React Router DOM 7** for routing
-- **ESLint** (flat config format)
+React 19 + TypeScript dashboard for the PipeJob agent (Vite, Tailwind CSS v4, TanStack Query, React Router 7).
 
 ## Commands
 
 ```bash
-npm install        # Install dependencies
-npm run dev        # Start dev server with HMR
-npm run build      # Type-check + production build
-npm run preview    # Preview production build locally
-npm run lint       # Run ESLint
+npm run dev      # dev server on :5173
+npm run build    # type-check + production build
+npm run lint     # ESLint (flat config)
 ```
 
-## Project Structure
+## Structure
 
 ```
 src/
-  components/      # Shared/reusable components
-  pages/           # Route-level page components
-  services/        # API layer (api.ts)
-  store/           # State management
-  App.tsx          # Root router
-  main.tsx         # React DOM entry point
+  api/client.ts     typed fetch wrapper for every server endpoint
+  lib/events.tsx    single SSE connection (/api/events) that updates React Query caches live
+  lib/format.ts     labels and formatting helpers
+  lib/styles.ts     cx() and shared input classes
+  components/       ui primitives, badges, charts (single-series, direct-labelled), Markdown, AddJobDialog
+  pages/            Overview, Agent, Review, Pipeline, JobDetail, Stories, Profile, Settings
+  types/index.ts    mirrors server/src/types — keep in sync
 ```
 
 ## Backend
 
-Expects a backend running at `http://localhost:3000`. The `/jobs` endpoint should return an array of objects with `id`, `title`, and `company_name` fields.
+Expects the API at `VITE_API_URL` (default `http://localhost:3001`).
 
-## TypeScript
+## Conventions
 
-Strict mode is enabled. `noUnusedLocals` and `noUnusedParameters` are enforced — the build will fail if these are violated.
+- Strict TypeScript with `noUnusedLocals`, `noUnusedParameters` and `erasableSyntaxOnly` (no parameter properties or enums).
+- Component files export only components (react-refresh); put helpers in `src/lib/`.
+- Model output (agent reports) is rendered with react-markdown, which escapes HTML.

@@ -1,0 +1,38 @@
+{
+  "targetRoles": [
+    "Working Student – AI / Agentic Systems",
+    "Werkstudent KI / Machine Learning",
+    "AI Engineering Intern",
+    "Working Student Software Engineering (LLM applications)"
+  ],
+  "targetArchetypes": ["agentic_ai", "llm_applications", "ml_engineering", "mlops_llmops"],
+  "seniority": ["working_student", "intern", "junior"],
+  "locations": ["Nuremberg", "Erlangen", "Munich", "Berlin", "Remote (Germany)"],
+  "remotePreference": "hybrid_or_remote",
+  "mustHaves": ["Hands-on work with LLMs or AI agents", "Compatible with a part-time study schedule (≤ 20 h/week during semester)"],
+  "niceToHaves": ["Mentorship from senior engineers", "Production deployment experience", "English-speaking team"],
+  "dealBreakers": [
+    "Requires 3+ years of full-time professional experience",
+    "Requires native-level German (C2)",
+    "Unpaid position"
+  ],
+  "salaryExpectation": "€16–20 / hour (working student)",
+  "workAuthorization": "EU citizen — no visa sponsorship needed",
+  "minGradeToTailor": "B",
+  "scoringWeights": {
+    "skills_match": 0.25,
+    "experience_level_fit": 0.15,
+    "role_alignment": 0.2,
+    "location_fit": 0.1,
+    "growth_potential": 0.1,
+    "company_signal": 0.1,
+    "compensation_fit": 0.05,
+    "legitimacy": 0.05
+  },
+  "search": {
+    "keywords": ["working student", "werkstudent", "intern", "AI", "LLM", "agent", "machine learning"],
+    "location": "Germany, Remote",
+    "sources": ["portals", "arbeitnow"]
+  },
+  "autopilotGoal": "Find new working-student or internship roles in AI / agentic systems in Germany (or remote), evaluate the plausible ones, prepare documents for the best matches and shortlist up to 3 for my review."
+}

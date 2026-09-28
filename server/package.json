@@ -1,35 +1,30 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "pipejob-server",
+  "version": "2.0.0",
+  "description": "PipeJob API: agentic, human-in-the-loop job search assistant",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "dev:debug": "tsx watch --inspect src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:reset": "rm -f data/applications.sqlite && npm run dev"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "setup:browser": "playwright install chromium"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Ashik Varghese",
+  "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
-    "axios": "^1.14.0",
+    "@anthropic-ai/sdk": "^0.128.0",
     "better-sqlite3": "^12.8.0",
-    "bull": "^4.16.5",
     "cors": "^2.8.6",
-    "docx": "^9.6.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "ioredis": "^5.10.1",
     "node-cron": "^4.2.1",
-    "pdf-lib": "^1.17.1",
     "playwright": "^1.58.2",
-    "playwright-extra": "^4.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "tsx": "^4.21.0",
-    "uuid": "^13.0.0",
     "winston": "^3.19.0",
     "zod": "^4.3.6"
   },
@@ -38,9 +33,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
-    "@types/uuid": "^10.0.0",
-    "concurrently": "^9.2.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^5.0.2"
   }
 }

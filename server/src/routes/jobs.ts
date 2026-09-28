@@ -2,196 +2,160 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
-import {
-  insertApplication,
-  updateApplicationStatus,
-  getApplication,
-  listApplications,
-  saveAnalysis,
-  getDb,
-} from '../db/schema';
-import { scrapeJobs } from '../services/scraper/index';
-import { analyseJD } from '../services/documents/analyser';
-import { submitApplication } from '../services/submission/formFiller';
-import { applicationRateLimiter, checkDailyLimit, recordApplication } from '../middleware/rateLimiter';
+import { z } from 'zod';
 import { config } from '../config';
-import logger from '../logger';
-import { jobEvents, emitJobEvent } from '../events';
-import type { JobStatus } from '../types/index';
+import { deleteApplication, getApplication, listApplications, setNotes } from '../db/applications';
+import {
+  approve,
+  dailyApplicationBudget,
+  markApplied,
+  PipelineError,
+  runEvaluation,
+  runTailoring,
+  setStatus,
+  skip,
+} from '../services/pipeline';
+import { importFromText, importFromUrl } from '../services/sources/importer';
+import { searchJobs } from '../services/sources/search';
+import { JOB_STATUSES, type Grade, type JobStatus } from '../types/index';
 
 type IdParams = { id: string };
-
 const router = Router();
 
-function loadMasterCV() {
-  const cvPath = path.resolve(config.masterCVPath);
-  return JSON.parse(fs.readFileSync(cvPath, 'utf-8'));
-}
+const csv = (v: unknown) => (typeof v === 'string' && v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined);
 
-// GET /api/jobs
+// GET /api/jobs?status=a,b&grade=A,B&review=true&search=&sort=score&limit=
 router.get('/', (req: Request, res: Response) => {
-  const { status, limit } = req.query;
-  const jobs = listApplications({
-    status: status as JobStatus | undefined,
-    limit: limit ? Number(limit) : undefined,
-  });
-  res.json(jobs);
+  const { review, search, sort, limit } = req.query;
+  res.json(
+    listApplications({
+      status: csv(req.query.status) as JobStatus[] | undefined,
+      grade: csv(req.query.grade) as Grade[] | undefined,
+      reviewRequested: review === 'true' ? true : review === 'false' ? false : undefined,
+      search: typeof search === 'string' && search ? search : undefined,
+      sort: sort === 'score' ? 'score' : 'recent',
+      limit: limit ? Number(limit) : undefined,
+    })
+  );
 });
 
-// GET /api/jobs/stream  (SSE) — must be before /:id
-router.get('/stream', (req: Request, res: Response) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
+router.get('/budget', (_req, res) => {
+  res.json(dailyApplicationBudget());
+});
 
-  const onEvent = (data: object) => {
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-  };
+const SearchBody = z.object({
+  keywords: z.array(z.string().min(1)).min(1),
+  location: z.string().optional(),
+  remoteOnly: z.boolean().optional(),
+  companies: z.array(z.string()).optional(),
+  sources: z.array(z.string()).optional(),
+  limit: z.number().int().positive().max(100).optional(),
+});
 
-  jobEvents.on('job_update', onEvent);
-  res.write(`data: ${JSON.stringify({ connected: true, ts: new Date().toISOString() })}\n\n`);
-
-  req.on('close', () => {
-    jobEvents.off('job_update', onEvent);
+// POST /api/jobs/search — scan portals without the agent
+router.post('/search', async (req: Request, res: Response) => {
+  const body = SearchBody.parse(req.body);
+  const report = await searchJobs(body);
+  res.json({
+    scanned: report.scanned,
+    sourcesQueried: report.sourcesQueried.length,
+    sourceErrors: report.sourceErrors,
+    newCount: report.results.filter((r) => r.isNew).length,
+    results: report.results.map((r) => ({ id: r.job.id, title: r.job.title, company: r.job.company, isNew: r.isNew, relevance: r.relevance })),
   });
 });
 
-// GET /api/jobs/:id
+const ImportBody = z.union([
+  z.object({ url: z.url() }),
+  z.object({
+    text: z.string().min(1),
+    title: z.string().optional(),
+    company: z.string().optional(),
+    location: z.string().optional(),
+    url: z.string().optional(),
+  }),
+]);
+
+// POST /api/jobs/import — from a URL or pasted JD text
+router.post('/import', async (req: Request, res: Response) => {
+  const body = ImportBody.parse(req.body);
+  const result = 'text' in body ? await importFromText(body) : await importFromUrl(body.url);
+  res.status(result.isNew ? 201 : 200).json(result);
+});
+
 router.get('/:id', (req: Request<IdParams>, res: Response) => {
-  const { id } = req.params;
-  const app = getApplication(id);
-  if (!app) {
-    res.status(404).json({ error: 'Application not found' });
-    return;
-  }
+  const app = getApplication(req.params.id);
+  if (!app) throw new PipelineError('Application not found', 404);
   res.json(app);
 });
 
-// POST /api/jobs/discover
-router.post('/discover', async (req: Request, res: Response) => {
-  const { keywords, sources, location } = req.body as { keywords: string[]; sources: string[]; location?: string };
-  if (!Array.isArray(keywords) || keywords.length === 0) {
-    res.status(400).json({ error: 'keywords must be a non-empty array' });
-    return;
-  }
-  if (!Array.isArray(sources) || sources.length === 0) {
-    res.status(400).json({ error: 'sources must be a non-empty array' });
-    return;
-  }
-
-  try {
-    const jobs = await scrapeJobs(sources, keywords, location);
-    const ids: string[] = [];
-    for (const job of jobs) {
-      insertApplication(job);
-      ids.push(job.id);
-      emitJobEvent(job.id, 'discovered');
-    }
-    logger.info({ action: 'discover', jobsFound: jobs.length, ids });
-    res.json({ discovered: ids.length, ids });
-  } catch (err) {
-    logger.error({ action: 'discover', error: String(err) });
-    res.status(500).json({ error: String(err) });
-  }
+router.post('/:id/evaluate', async (req: Request<IdParams>, res: Response) => {
+  res.json(await runEvaluation(req.params.id, { actor: 'human' }));
 });
 
-// POST /api/jobs/:id/analyse
-router.post('/:id/analyse', async (req: Request<IdParams>, res: Response) => {
-  const { id } = req.params;
-  const app = getApplication(id);
-  if (!app) { res.status(404).json({ error: 'Not found' }); return; }
-
-  try {
-    const masterCV = loadMasterCV();
-    const analysis = await analyseJD(masterCV, app.job.rawJD, app.id);
-    saveAnalysis(app.id, analysis);
-    updateApplicationStatus(app.id, 'analysed');
-    emitJobEvent(app.id, 'analysed', `Match score: ${analysis.matchScore}`);
-
-    getDb().prepare('UPDATE applications SET match_score = ?, updated_at = ? WHERE id = ?')
-      .run(analysis.matchScore, new Date().toISOString(), app.id);
-
-    res.json(analysis);
-  } catch (err) {
-    updateApplicationStatus(app.id, 'error', String(err));
-    logger.error({ action: 'analyse', jobId: app.id, error: String(err) });
-    res.status(500).json({ error: String(err) });
-  }
+router.post('/:id/tailor', async (req: Request<IdParams>, res: Response) => {
+  const { tailoring } = await runTailoring(req.params.id, { actor: 'human' });
+  res.json(tailoring);
 });
 
-// POST /api/jobs/:id/generate
-router.post('/:id/generate', async (req: Request<IdParams>, res: Response) => {
-  const { id } = req.params;
-  const app = getApplication(id);
-  if (!app) { res.status(404).json({ error: 'Not found' }); return; }
-  if (!app.analysis) { res.status(400).json({ error: 'Job must be analysed first' }); return; }
-
-  try {
-    const masterCV = loadMasterCV();
-    const { generateDocuments } = await import('../services/documents/generator');
-    const output = await generateDocuments(masterCV, app.analysis, config.outputDir);
-    updateApplicationStatus(app.id, 'documents_ready');
-
-    getDb().prepare('UPDATE applications SET cv_path = ?, cover_letter_path = ?, updated_at = ? WHERE id = ?')
-      .run(output.cvPath, output.coverLetterPath, new Date().toISOString(), app.id);
-
-    emitJobEvent(app.id, 'documents_ready');
-    res.json(output);
-  } catch (err) {
-    updateApplicationStatus(app.id, 'error', String(err));
-    logger.error({ action: 'generate', jobId: app.id, error: String(err) });
-    res.status(500).json({ error: String(err) });
-  }
+// Human-in-the-loop checkpoint: explicit approval after reviewing documents.
+router.post('/:id/approve', (req: Request<IdParams>, res: Response) => {
+  approve(req.params.id);
+  res.json(getApplication(req.params.id));
 });
 
-// POST /api/jobs/:id/apply
-router.post('/:id/apply', applicationRateLimiter, async (req: Request<IdParams>, res: Response) => {
-  const { id } = req.params;
-  const app = getApplication(id);
-  if (!app) { res.status(404).json({ error: 'Not found' }); return; }
-  if (!app.output) { res.status(400).json({ error: 'Documents must be generated first' }); return; }
-
-  if (!await checkDailyLimit()) {
-    res.status(429).json({ error: 'Daily application limit reached' });
-    return;
-  }
-
-  try {
-    updateApplicationStatus(app.id, 'applying');
-    emitJobEvent(app.id, 'applying');
-
-    const result = await submitApplication(app.job, app.output, config);
-    recordApplication();
-
-    if (result.success) {
-      updateApplicationStatus(app.id, 'applied');
-      getDb().prepare('UPDATE applications SET applied_at = ?, form_fields_used = ?, updated_at = ? WHERE id = ?')
-        .run(new Date().toISOString(), JSON.stringify(result.fieldsUsed), new Date().toISOString(), app.id);
-      emitJobEvent(app.id, 'applied');
-    } else {
-      updateApplicationStatus(app.id, 'error', 'Submission failed');
-      emitJobEvent(app.id, 'error', 'Submission failed');
-    }
-
-    res.json(result);
-  } catch (err) {
-    updateApplicationStatus(app.id, 'error', String(err));
-    logger.error({ action: 'apply', jobId: app.id, error: String(err) });
-    res.status(500).json({ error: String(err) });
-  }
+// The candidate submitted the application themselves on the employer's site.
+router.post('/:id/applied', (req: Request<IdParams>, res: Response) => {
+  const { note } = z.object({ note: z.string().optional() }).parse(req.body ?? {});
+  markApplied(req.params.id, note);
+  res.json(getApplication(req.params.id));
 });
 
-// PATCH /api/jobs/:id/status
+router.post('/:id/skip', (req: Request<IdParams>, res: Response) => {
+  const { reason } = z.object({ reason: z.string().default('Not a fit') }).parse(req.body ?? {});
+  skip(req.params.id, reason, 'human');
+  res.json(getApplication(req.params.id));
+});
+
 router.patch('/:id/status', (req: Request<IdParams>, res: Response) => {
-  const { id } = req.params;
-  const { status, note } = req.body as { status: JobStatus; note?: string };
-  const app = getApplication(id);
-  if (!app) { res.status(404).json({ error: 'Not found' }); return; }
+  const { status, note } = z
+    .object({ status: z.enum(JOB_STATUSES as [JobStatus, ...JobStatus[]]), note: z.string().optional() })
+    .parse(req.body);
+  setStatus(req.params.id, status, note, 'human');
+  res.json(getApplication(req.params.id));
+});
 
-  updateApplicationStatus(id, status, note);
-  emitJobEvent(id, status, note);
-  res.json({ id, status });
+router.patch('/:id/notes', (req: Request<IdParams>, res: Response) => {
+  const { notes } = z.object({ notes: z.string() }).parse(req.body);
+  if (!getApplication(req.params.id)) throw new PipelineError('Application not found', 404);
+  setNotes(req.params.id, notes);
+  res.json({ saved: true });
+});
+
+router.delete('/:id', (req: Request<IdParams>, res: Response) => {
+  const { id } = req.params;
+  if (!deleteApplication(id)) throw new PipelineError('Application not found', 404);
+  const dir = path.join(path.resolve(config.outputDir), path.basename(id));
+  fs.rmSync(dir, { recursive: true, force: true });
+  res.status(204).end();
+});
+
+// GET /api/jobs/:id/documents/cv|cover-letter[?download=1]
+router.get('/:id/documents/:type', (req: Request<IdParams & { type: string }>, res: Response) => {
+  const { id, type } = req.params;
+  if (type !== 'cv' && type !== 'cover-letter') throw new PipelineError('type must be cv or cover-letter');
+  const app = getApplication(id);
+  if (!app) throw new PipelineError('Application not found', 404);
+
+  // path.basename guards against traversal via the id parameter.
+  const file = path.join(path.resolve(config.outputDir), path.basename(id), `${type}.pdf`);
+  if (!fs.existsSync(file)) throw new PipelineError('Document not generated yet', 404);
+
+  const safe = (s: string) => s.replace(/[^\w.-]+/g, '_').slice(0, 60);
+  const filename = `${safe(app.job.company)}_${type}.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `${req.query.download ? 'attachment' : 'inline'}; filename="${filename}"`);
+  fs.createReadStream(file).pipe(res);
 });
 
 export default router;

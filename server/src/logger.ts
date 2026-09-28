@@ -33,7 +33,7 @@ const transports: winston.transport[] = [
   }),
 ];
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && !process.env.VITEST) {
   transports.push(
     new winston.transports.Console({
       format: consoleFormat,

@@ -23,8 +23,8 @@
  * - source_confidence: "high" = verified, "medium" = likely correct, "low" = inferred
  */
 
-import { v4 as uuidv4 } from 'uuid';
-import type { CompanyRecord } from './schema';
+import { randomUUID as uuidv4 } from 'crypto';
+import type { CompanyRecord } from './companies';
 
 type SeedCompany = Omit<CompanyRecord, 'created_at' | 'updated_at'>;
 
